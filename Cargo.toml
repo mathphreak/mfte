@@ -5,3 +5,5 @@ authors = ["Matt Horn <matt@matthorn.tech>"]
 
 [dependencies]
 termion = "*"
+macro-attr = "0.2.0"
+enum_derive = "0.1.7"
