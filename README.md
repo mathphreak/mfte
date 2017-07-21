@@ -4,6 +4,8 @@
 Because I am terrible and bad at everything, I'm writing a text editor.
 Vim and Emacs are too complicated. Nano does almost everything I want. (I don't have an ideological grievance against Electron, but I think using it for a text editor is silly.)
 
+Doesn't work on Windows because nothing ever works on Windows.
+
 RULES:
 - Don't do magic. Automatically indenting your entire file for you is really cool, but remembering how to do that takes up space in your brain that would be better spent on other things, like how to indent your code.
 - Don't be modal. Typing text should always (within reason) actually insert text.

@@ -1,3 +1,5 @@
+extern crate termion;
+
 fn main() {
-    println!("Hello, world!");
+    print!("{}{}Stuff\n", termion::clear::All, termion::cursor::Goto(1, 1));
 }
