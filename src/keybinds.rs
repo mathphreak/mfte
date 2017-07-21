@@ -1,10 +1,29 @@
 use std::collections::HashMap;
 use termion::event::Key;
 
+const DEFAULT_KEYBINDS: &'static str = r#"^Q: Quit
+^W: CloseFile
+^O: OpenFile
+^S: SaveFile
+^X: Cut
+^C: Copy
+^V: Paste
+^F: Find
+^H: FindReplace
+"#;
+
 macro_attr! {
     #[derive(Clone, EnumDisplay!, EnumFromStr!)]
     pub enum Command {
-        Quit
+        Quit,
+        CloseFile,
+        OpenFile,
+        SaveFile,
+        Cut,
+        Copy,
+        Paste,
+        Find,
+        FindReplace
     }
 }
 
@@ -28,16 +47,22 @@ impl KeybindTable {
     }
 }
 
+impl Default for KeybindTable {
+    fn default() -> Self {
+        Self::from(DEFAULT_KEYBINDS)
+    }
+}
+
 fn decode_key_spec(spec: &str) -> Option<Key> {
     if spec.len() != 2 {
-        print!("Bad key specifier: {}", spec);
+        println!("Bad key specifier: {}", spec);
         return None;
     }
     let (modifier, key) = spec.split_at(1);
     let modifier = modifier.chars().next().unwrap();
     let key = key.chars().next().unwrap();
     if modifier != '^' {
-        print!("Bad key specifier: {}", spec);
+        println!("Bad key specifier: {}", spec);
         return None;
     }
     Some(Key::Ctrl(key))
@@ -51,7 +76,7 @@ impl<'a> From<&'a str> for KeybindTable {
         for line in text.lines() {
             let data: Vec<_> = line.split(": ").collect();
             if data.len() != 2 {
-                print!("Bad keybind specifier: {}", line);
+                println!("Bad keybind specifier: {}", line);
                 continue
             }
             if let Ok(command) = data[1].parse::<Command>() {
@@ -62,6 +87,8 @@ impl<'a> From<&'a str> for KeybindTable {
                     },
                     _ => {}
                 }
+            } else {
+                println!("Bad command: {}", data[1]);
             }
         }
         result

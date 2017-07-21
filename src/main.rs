@@ -11,7 +11,9 @@ use std::io::{Write, stdin, stdout};
 mod keybinds;
 use keybinds::*;
 
-fn render_footer(mut stdout: &mut AlternateScreen<RawTerminal<std::io::Stdout>>, keys: &KeybindTable) {
+type Terminal = AlternateScreen<RawTerminal<std::io::Stdout>>;
+
+fn render_footer(mut stdout: &mut Terminal, keys: &KeybindTable) {
     use termion::{color, cursor};
     let (screen_width, screen_height) = termion::terminal_size().unwrap();
 
@@ -27,16 +29,21 @@ fn render_footer(mut stdout: &mut AlternateScreen<RawTerminal<std::io::Stdout>>,
                color::Bg(color::Reset),
                color::Fg(color::Reset),
                action).unwrap();
-        x += (key.len() + 1 + action.len() + 1) as u16;
+        x += 16;
+        if x > screen_width {
+            x = 1;
+            y -= 1;
+        }
     }
 }
 
 fn main() {
-    let keys = KeybindTable::from("^Q: Quit\n^X: Quit");
+    let keys = KeybindTable::default();
     let stdin = stdin();
     let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap());
-    write!(stdout, "{}{}Press Ctrl-Q to quit", termion::clear::All, termion::cursor::Goto(1, 1)).unwrap();
+    write!(stdout, "{}", termion::clear::All).unwrap();
     render_footer(&mut stdout, &keys);
+    write!(stdout, "{}", termion::cursor::Goto(1, 1)).unwrap();
     stdout.flush().unwrap();
     for c in stdin.events() {
         let evt = c.unwrap();
