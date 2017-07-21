@@ -16,6 +16,16 @@ impl KeybindTable {
     pub fn lookup(&self, key: Key) -> Option<Command> {
         self.table.get(&key).cloned()
     }
+
+    pub fn entries(&self) -> Vec<(String, String)> {
+        self.table.iter().map(|(key, command)| {
+            let key = match key {
+                &Key::Ctrl(k) => format!("^{}", k).to_uppercase(),
+                _ => String::from("???")
+            };
+            (key, format!("{}", command))
+        }).collect()
+    }
 }
 
 fn decode_key_spec(spec: &str) -> Option<Key> {
