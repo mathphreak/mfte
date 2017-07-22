@@ -10,6 +10,8 @@ const DEFAULT_KEYBINDS: &'static str = r#"^Q: Quit
 ^V: Paste
 ^F: Find
 ^H: FindReplace
+^Z: Undo
+^Y: Redo
 "#;
 
 macro_attr! {
@@ -23,7 +25,9 @@ macro_attr! {
         Copy,
         Paste,
         Find,
-        FindReplace
+        FindReplace,
+        Undo,
+        Redo
     }
 }
 
