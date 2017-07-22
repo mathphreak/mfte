@@ -97,7 +97,7 @@ fn main() {
         }
         let (screen_width, screen_height) = termion::terminal_size().unwrap();
         if cursor_x < 1 { cursor_x = 1; }
-        if cursor_x > screen_width - LINENO_CHARS - 2 { cursor_x = screen_width - LINENO_CHARS - 2; }
+        if cursor_x > screen_width - LINENO_CHARS - 1 { cursor_x = screen_width - LINENO_CHARS - 2; }
         if cursor_y < 1 { cursor_y = 1; }
         if cursor_y > screen_height - 3 { cursor_y = screen_height - 3; }
         write!(stdout, "{}", cursor::Goto(cursor_x + LINENO_CHARS + 1, cursor_y)).unwrap();
