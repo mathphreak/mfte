@@ -9,7 +9,6 @@ use termion::input::TermRead;
 use termion::cursor;
 use termion::color;
 use std::io::{Write, stdin, stdout};
-use std::cmp;
 
 mod keybinds;
 use keybinds::*;
@@ -27,25 +26,20 @@ fn render_file(mut stdout: &mut Terminal, file: &File) {
     let mut x = 1;
     let mut y = 1;
 
-    for (line_number, line) in file.lines.iter().enumerate() {
-        write!(stdout, "{}{}{:3}{} ",
-               color::Fg(color::LightBlack),
-               cursor::Goto(x, y),
-               (line_number + 1),
-               color::Fg(color::Reset)).unwrap();
-        x += LINENO_CHARS + 1;
-        let mut line_start = 0;
-        let mut line_end = cmp::min(line.len(), (screen_width - x) as usize);
-        write!(stdout, "{}{}", cursor::Goto(x, y), &line[line_start..line_end]).unwrap();
-        while line_end < line.len() {
-            x = LINENO_CHARS + 2;
-            y += 1;
-            line_start = line_end;
-            line_end += cmp::min(line.len() - line_end, (screen_width - x) as usize);
-            write!(stdout, "{}{}", cursor::Goto(x, y), &line[line_start..line_end]).unwrap();
+    for (line_number_maybe, line) in file.wrapped_lines((screen_width - LINENO_CHARS - 1, screen_height)) {
+        if let Some(line_number) = line_number_maybe {
+            write!(stdout, "{}{}",
+                   color::Fg(color::LightBlack),
+                   cursor::Goto(x, y)).unwrap();
+            write!(stdout, "{:1$}",
+                   line_number + 1, LINENO_CHARS as usize).unwrap();
+            write!(stdout, "{}",
+                   color::Fg(color::Reset)).unwrap();
         }
-        y += 1;
+        x += LINENO_CHARS + 1;
+        write!(stdout, "{}{}", cursor::Goto(x, y), line).unwrap();
         x = 1;
+        y += 1;
     }
 }
 
