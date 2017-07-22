@@ -9,6 +9,7 @@ use termion::input::TermRead;
 use termion::cursor;
 use termion::color;
 use std::io::{Write, stdin, stdout};
+use std::env;
 
 mod keybinds;
 use keybinds::*;
@@ -72,7 +73,9 @@ fn main() {
     let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap());
     write!(stdout, "{}", termion::clear::All).unwrap();
     render_footer(&mut stdout, &keys);
-    let file = File::open("README.md");
+    let args: Vec<String> = env::args().collect();
+    let filename = args.get(1).cloned().unwrap_or(String::from("README.md"));
+    let file = File::open(&filename);
     render_file(&mut stdout, &file);
     let (mut cursor_x, mut cursor_y) = (1, 1);
     write!(stdout, "{}", cursor::Goto(cursor_x + LINENO_CHARS + 1, cursor_y)).unwrap();
