@@ -220,7 +220,7 @@ impl TermImpl for Terminal {
         let mut buf = empty_csbi!();
         unsafe { kernel32::GetConsoleScreenBufferInfo(self.stdout, &mut buf); };
         let win = buf.srWindow;
-        ((win.Right - win.Left) as i32, (win.Bottom - win.Top) as i32)
+        ((win.Right - win.Left + 1) as i32, (win.Bottom - win.Top + 1) as i32)
     }
 
     fn goto(&mut self, (x, y): (i32, i32)) {
