@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use termion::event::Key;
+use super::terminal::Key;
 
 const DEFAULT_KEYBINDS: &'static str = r#"^Q: Quit
 ^W: CloseFile

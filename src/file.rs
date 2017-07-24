@@ -20,7 +20,7 @@ impl File {
         }
     }
 
-    pub fn wrapped_lines(&self, dim: (u16, u16)) -> Vec<(Option<u16>, String)> {
+    pub fn wrapped_lines(&self, dim: (i32, i32)) -> Vec<(Option<u16>, String)> {
         let mut result = vec![];
         let (width, _) = dim;
         for (line_number, raw_line) in self.lines.iter().enumerate() {

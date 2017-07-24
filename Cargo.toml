@@ -4,6 +4,12 @@ version = "0.1.0"
 authors = ["Matt Horn <matt@matthorn.tech>"]
 
 [dependencies]
-termion = "*"
 macro-attr = "0.2.0"
 enum_derive = "0.1.7"
+
+[target.'cfg(windows)'.dependencies]
+winapi = "0.2.8"
+kernel32-sys = "0.2.2"
+
+[target.'cfg(not(windows))'.dependencies]
+termion = "1.4.0"
