@@ -1,6 +1,9 @@
 # MFTE, the magic-free text editor
 ## With mediocre power comes miniscule responsibility
 
+[![Travis](https://img.shields.io/travis/mathphreak/mfte.svg?style=flat-square&label=UNIX+builds)](https://travis-ci.org/mathphreak/mfte)
+[![AppVeyor](https://img.shields.io/appveyor/ci/mathphreak/mfte.svg?style=flat-square&label=Windows+build)](https://ci.appveyor.com/project/mathphreak/mfte)
+
 Because I am terrible and bad at everything, I'm writing a text editor.
 Vim and Emacs are too complicated. Nano does almost everything I want. (I don't have an ideological grievance against Electron, but I think using it for a text editor is silly.)
 
