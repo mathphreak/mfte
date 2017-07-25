@@ -58,19 +58,33 @@ fn render_footer(mut out: &mut Terminal, keys: &KeybindTable) {
     }
 }
 
+fn render_status(mut out: &mut Terminal, file: &File) {
+    let (width, height) = out.get_size();
+    let file_size = (width - LINENO_CHARS - 1, height - 3);
+    let x = 1;
+    let y = height;
+    out.goto((x, y));
+    write!(out, "{}", file.debug(file_size)).unwrap();
+}
+
 fn main() {
     let keys = KeybindTable::default();
     let mut term = Terminal::default();
     term.clear();
+    term.flush().unwrap();
     render_footer(&mut term, &keys);
     let args: Vec<String> = env::args().collect();
     let filename = args.get(1).cloned().unwrap_or(String::from("README.md"));
-    let file = File::open(&filename);
+    let mut file = File::open(&filename);
     render_file(&mut term, &file);
-    let (mut cursor_x, mut cursor_y) = (1, 1);
-    term.goto((cursor_x + LINENO_CHARS + 1, cursor_y));
+    render_status(&mut term, &file);
+    let (screen_w, screen_h) = term.get_size();
+    let file_size = (screen_w - LINENO_CHARS - 1, screen_h - 3);
+    term.goto((file.cursor(file_size).x + LINENO_CHARS + 1, file.cursor(file_size).y));
     term.flush().unwrap();
     for evt in term.keys() {
+        let (screen_w, screen_h) = term.get_size();
+        let file_size = (screen_w - LINENO_CHARS - 1, screen_h - 3);
         match evt {
             Event::Key(Key::Ctrl(k)) => {
                 match keys.lookup(Key::Ctrl(k)) {
@@ -78,18 +92,18 @@ fn main() {
                     _ => ()
                 }
             },
-            Event::Key(Key::Left) => cursor_x -= 1,
-            Event::Key(Key::Right) => cursor_x += 1,
-            Event::Key(Key::Up) => cursor_y -= 1,
-            Event::Key(Key::Down) => cursor_y += 1,
+            Event::Key(Key::Left) => file.move_cursor_left(file_size),
+            Event::Key(Key::Right) => file.move_cursor_right(file_size),
+            Event::Key(Key::Up) => file.move_cursor_up(file_size),
+            Event::Key(Key::Down) => file.move_cursor_down(file_size),
+            Event::Key(Key::Char(c)) => {
+                file.insert(term.get_size(), c);
+                render_file(&mut term, &file);
+            },
             _ => {}
         }
-        let (screen_width, screen_height) = term.get_size();
-        if cursor_x < 1 { cursor_x = 1; }
-        if cursor_x > screen_width - LINENO_CHARS - 1 { cursor_x = screen_width - LINENO_CHARS - 2; }
-        if cursor_y < 1 { cursor_y = 1; }
-        if cursor_y > screen_height - 3 { cursor_y = screen_height - 3; }
-        term.goto((cursor_x + LINENO_CHARS + 1, cursor_y));
+        render_status(&mut term, &file);
+        term.goto((file.cursor(file_size).x + LINENO_CHARS + 1, file.cursor(file_size).y));
         term.flush().unwrap();
     }
 }
