@@ -69,14 +69,6 @@ impl File {
         &self.lines[self.file_cursor.y as usize - 1]
     }
 
-    fn current_line_mut(&mut self) -> &mut String {
-        &mut self.lines[self.file_cursor.y as usize - 1]
-    }
-
-    fn delta_line(&self, delta: i32) -> &String {
-        &self.lines[(self.file_cursor.y + delta) as usize - 1]
-    }
-
     fn recompute_offsets(&mut self, dim: (i32, i32)) {
         if dim != self.last_dim {
             panic!("AAA I CAN'T DO THIS YET");
@@ -87,13 +79,13 @@ impl File {
         if self.file_cursor.x > 1 {
             self.file_cursor.x -= 1;
         } else if self.file_cursor.y > 1 {
-            self.file_cursor.y -= 1;
-            self.file_cursor.x = self.current_line().len() as i32;
+            self.file_cursor.x = dim.0;
+            self.move_cursor_up(dim);
         }
     }
 
     pub fn move_cursor_right(&mut self, dim: (i32, i32)) {
-        if self.file_cursor.x < self.current_line().len() as i32 {
+        if self.file_cursor.x <= self.current_line().len() as i32 {
             self.file_cursor.x += 1;
         } else if self.file_cursor.y < self.lines.len() as i32 {
             self.file_cursor.x = 1;
@@ -125,8 +117,17 @@ impl File {
     }
 
     pub fn insert(&mut self, dim: (i32, i32), c: char) {
-        let x = self.file_cursor.x - 1;
-        self.current_line_mut().insert(x as usize, c);
+        {
+            let x = self.file_cursor.x - 1;
+            let line = &mut self.lines[self.file_cursor.y as usize - 1];
+            let pos = if x > line.len() as i32 {
+                self.file_cursor.x = line.len() as i32 - 1;
+                line.len()
+            } else {
+                x as usize
+            };
+            line.insert(pos, c);
+        }
         self.move_cursor_right(dim);
     }
 }
