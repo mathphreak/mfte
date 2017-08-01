@@ -79,8 +79,8 @@ impl File {
         if self.file_cursor.x > 1 {
             self.file_cursor.x -= 1;
         } else if self.file_cursor.y > 1 {
-            self.file_cursor.x = dim.0;
             self.move_cursor_up(dim);
+            self.file_cursor.x = self.current_line().len() as i32 + 1;
         }
     }
 
@@ -88,7 +88,8 @@ impl File {
         if self.file_cursor.x <= self.current_line().len() as i32 {
             self.file_cursor.x += 1;
         } else if self.file_cursor.y < self.lines.len() as i32 {
-            self.file_cursor.x = 1;
+            // Depend on truncation here to clamp to lower multiple of screen width
+            self.file_cursor.x = ((self.file_cursor.x - 1) / dim.0) * dim.0 + 1;
             self.move_cursor_down(dim);
         }
     }
@@ -101,6 +102,9 @@ impl File {
             let extra_lines = self.current_line().len() as i32 / dim.0;
             self.y_offset -= self.current_line().len() as i32 / dim.0;
             self.file_cursor.x += extra_lines * dim.0;
+            if self.file_cursor.x > self.current_line().len() as i32 + 1 {
+                self.file_cursor.x = self.current_line().len() as i32 + 1;
+            }
         }
     }
 
@@ -113,6 +117,9 @@ impl File {
                 self.file_cursor.x -= dim.0;
                 self.y_offset += 1;
             }
+        }
+        if self.file_cursor.x > self.current_line().len() as i32 + 1 {
+            self.file_cursor.x = self.current_line().len() as i32 + 1;
         }
     }
 
