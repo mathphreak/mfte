@@ -3,26 +3,107 @@ use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::cmp;
+use std::fmt;
 
 pub struct Cursor {
     pub x: i32,
     pub y: i32,
+    y_offset: i32,
+}
+
+impl fmt::Display for Cursor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "({}, {}, o={})", self.x, self.y, self.y_offset)
+    }
+}
+
+impl Cursor {
+    fn curr_len(&self, lines: &Vec<String>) -> i32 {
+        lines[self.y as usize - 1].len() as i32
+    }
+
+    fn move_left(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+        if self.x > 1 {
+            self.x -= 1;
+        } else if self.y > 1 {
+            self.move_up(dim, lines);
+            self.x = self.curr_len(lines) + 1;
+        }
+    }
+
+    fn move_right(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+        if self.x <= self.curr_len(lines) {
+            self.x += 1;
+        } else if self.y < lines.len() as i32 {
+            self.move_home(dim, lines);
+            self.move_down(dim, lines);
+        }
+    }
+
+    fn move_up(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+        if self.x > dim.0 {
+            self.x -= dim.0;
+        } else if self.y > 1 {
+            self.y -= 1;
+            let line_len = self.curr_len(lines);
+            let extra_lines = line_len / dim.0;
+            self.y_offset -= extra_lines;
+            self.x += extra_lines * dim.0;
+            if self.x > line_len + 1 {
+                self.x = line_len + 1;
+            }
+        }
+    }
+
+    fn move_down(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+        if (self.x - 1) / dim.0 < self.curr_len(lines) / dim.0 {
+            self.x += dim.0;
+        } else if self.y < lines.len() as i32 {
+            self.y += 1;
+            while self.x > dim.0 {
+                self.x -= dim.0;
+                self.y_offset += 1;
+            }
+        }
+        if self.x > self.curr_len(lines) + 1 {
+            self.x = self.curr_len(lines) + 1;
+        }
+    }
+
+    fn move_home(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+        // Depend on truncation here to clamp to lower multiple of screen width
+        self.x = ((self.x - 1) / dim.0) * dim.0 + 1;
+    }
+
+    fn move_end(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+        self.x = ((self.x - 1) / dim.0 + 1) * dim.0;
+        if self.x > self.curr_len(lines) + 1 {
+            self.x = self.curr_len(lines) + 1;
+        }
+    }
+
+    fn project(&self, dim: (i32, i32)) -> Cursor {
+        Cursor {
+            x: (self.x - 1) % dim.0 + 1,
+            y: self.y + (self.x - 1) / dim.0 + self.y_offset,
+            y_offset: 0,
+        }
+    }
 }
 
 pub struct File {
     pub name: String,
     pub lines: Vec<String>,
-    file_cursor: Cursor,
-    y_offset: i32,
+    caret: Cursor,
+    window_top: Cursor,
     last_dim: (i32, i32),
     misc: String,
 }
 
 impl File {
     pub fn debug(&self, dim: (i32, i32)) -> String {
-        format!("FC ({}, {}) O ({}) C ({}, {}) {}",
-            self.file_cursor.x, self.file_cursor.y, self.y_offset,
-            self.cursor(dim).x, self.cursor(dim).y, self.misc
+        format!("Caret {}, Top {}, Cursor {} {}",
+            self.caret, self.window_top, self.cursor(dim), self.misc
         )
     }
 
@@ -33,40 +114,50 @@ impl File {
         File {
             name: String::from(Path::new(path).file_name().unwrap().to_string_lossy()),
             lines: f.lines().map(|r| r.unwrap()).collect(),
-            file_cursor: Cursor { x: 1, y: 1 },
-            y_offset: 0,
+            caret: Cursor { x: 1, y: 1, y_offset: 0 },
+            window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
             misc: String::from(""),
         }
     }
 
     pub fn cursor(&self, dim: (i32, i32)) -> Cursor {
+        let projected_caret = self.caret.project(dim);
+        let projected_top = self.window_top.project(dim);
         Cursor {
-            x: (self.file_cursor.x - 1) % dim.0 + 1,
-            y: self.file_cursor.y + (self.file_cursor.x - 1) / dim.0 + self.y_offset,
+            x: projected_caret.x,
+            y: projected_caret.y - projected_top.y + 1,
+            y_offset: 0,
         }
     }
 
     pub fn wrapped_lines(&self, dim: (i32, i32)) -> Vec<(Option<u16>, String)> {
         let mut result = vec![];
-        let (width, _) = dim;
-        for (line_number, raw_line) in self.lines.iter().enumerate() {
+        let width = dim.0 as usize;
+        let top_y = self.window_top.y as usize - 1;
+        let top_extra = (self.window_top.x - 1) / dim.0;
+        for (line_number, raw_line) in self.lines.iter().enumerate().skip(top_y) {
             let mut line_start = 0;
-            let mut line_end = cmp::min(raw_line.len(), width as usize);
+            let mut line_end = cmp::min(raw_line.len(), width);
             result.push((Some(line_number as u16),
                          String::from(&raw_line[line_start..line_end])));
             while line_end < raw_line.len() {
                 line_start = line_end;
-                line_end += cmp::min(raw_line.len() - line_end, width as usize);
+                line_end += cmp::min(raw_line.len() - line_end, width);
                 result.push((None,
                              String::from(&raw_line[line_start..line_end])));
             }
+            if result.len() as i32 >= dim.1 + top_extra {
+                break;
+            }
         }
+        result.truncate((dim.1 + top_extra) as usize);
+        result.drain(..top_extra as usize);
         result
     }
 
     fn current_line(&self) -> &String {
-        &self.lines[self.file_cursor.y as usize - 1]
+        &self.lines[self.caret.y as usize - 1]
     }
 
     fn recompute_offsets(&mut self, dim: (i32, i32)) {
@@ -75,71 +166,60 @@ impl File {
         }
     }
 
-    pub fn move_cursor_left(&mut self, dim: (i32, i32)) {
-        if self.file_cursor.x > 1 {
-            self.file_cursor.x -= 1;
-        } else if self.file_cursor.y > 1 {
-            self.move_cursor_up(dim);
-            self.file_cursor.x = self.current_line().len() as i32 + 1;
+    pub fn move_cursor_left(&mut self, dim: (i32, i32)) -> bool {
+        self.caret.move_left(dim, &self.lines);
+        if self.cursor(dim).y < 1 {
+            self.window_top.move_up(dim, &self.lines);
+            true
+        } else {
+            false
         }
     }
 
-    pub fn move_cursor_right(&mut self, dim: (i32, i32)) {
-        if self.file_cursor.x <= self.current_line().len() as i32 {
-            self.file_cursor.x += 1;
-        } else if self.file_cursor.y < self.lines.len() as i32 {
-            self.move_cursor_home(dim);
-            self.move_cursor_down(dim);
+    pub fn move_cursor_right(&mut self, dim: (i32, i32)) -> bool {
+        self.caret.move_right(dim, &self.lines);
+        if self.cursor(dim).y > dim.1 {
+            self.window_top.move_down(dim, &self.lines);
+            true
+        } else {
+            false
         }
     }
 
-    pub fn move_cursor_up(&mut self, dim: (i32, i32)) {
-        if self.file_cursor.x > dim.0 {
-            self.file_cursor.x -= dim.0;
-        } else if self.file_cursor.y > 1 {
-            self.file_cursor.y -= 1;
-            let extra_lines = self.current_line().len() as i32 / dim.0;
-            self.y_offset -= self.current_line().len() as i32 / dim.0;
-            self.file_cursor.x += extra_lines * dim.0;
-            if self.file_cursor.x > self.current_line().len() as i32 + 1 {
-                self.file_cursor.x = self.current_line().len() as i32 + 1;
-            }
+    pub fn move_cursor_up(&mut self, dim: (i32, i32)) -> bool {
+        self.caret.move_up(dim, &self.lines);
+        if self.cursor(dim).y < 1 {
+            self.window_top.move_up(dim, &self.lines);
+            true
+        } else {
+            false
         }
     }
 
-    pub fn move_cursor_down(&mut self, dim: (i32, i32)) {
-        if (self.file_cursor.x - 1) / dim.0 < self.current_line().len() as i32 / dim.0 {
-            self.file_cursor.x += dim.0;
-        } else if self.file_cursor.y < self.lines.len() as i32 {
-            self.file_cursor.y += 1;
-            while self.file_cursor.x > dim.0 {
-                self.file_cursor.x -= dim.0;
-                self.y_offset += 1;
-            }
-        }
-        if self.file_cursor.x > self.current_line().len() as i32 + 1 {
-            self.file_cursor.x = self.current_line().len() as i32 + 1;
+    pub fn move_cursor_down(&mut self, dim: (i32, i32)) -> bool {
+        self.caret.move_down(dim, &self.lines);
+        if self.cursor(dim).y > dim.1 {
+            self.window_top.move_down(dim, &self.lines);
+            true
+        } else {
+            false
         }
     }
 
     pub fn move_cursor_home(&mut self, dim: (i32, i32)) {
-        // Depend on truncation here to clamp to lower multiple of screen width
-        self.file_cursor.x = ((self.file_cursor.x - 1) / dim.0) * dim.0 + 1;
+        self.caret.move_home(dim, &self.lines);
     }
 
     pub fn move_cursor_end(&mut self, dim: (i32, i32)) {
-        self.file_cursor.x = ((self.file_cursor.x - 1) / dim.0 + 1) * dim.0;
-        if self.file_cursor.x > self.current_line().len() as i32 + 1 {
-            self.file_cursor.x = self.current_line().len() as i32 + 1;
-        }
+        self.caret.move_end(dim, &self.lines);
     }
 
     pub fn insert(&mut self, dim: (i32, i32), c: char) {
         {
-            let x = self.file_cursor.x - 1;
-            let line = &mut self.lines[self.file_cursor.y as usize - 1];
+            let x = self.caret.x - 1;
+            let line = &mut self.lines[self.caret.y as usize - 1];
             let pos = if x > line.len() as i32 {
-                self.file_cursor.x = line.len() as i32 - 1;
+                self.caret.x = line.len() as i32 - 1;
                 line.len()
             } else {
                 x as usize
@@ -151,10 +231,10 @@ impl File {
 
     pub fn insert_newline(&mut self, dim: (i32, i32)) {
         let after = {
-            let before = &mut self.lines[self.file_cursor.y as usize - 1];
-            before.split_off(self.file_cursor.x as usize - 1)
+            let before = &mut self.lines[self.caret.y as usize - 1];
+            before.split_off(self.caret.x as usize - 1)
         };
-        self.lines.insert(self.file_cursor.y as usize, after);
+        self.lines.insert(self.caret.y as usize, after);
         self.move_cursor_right(dim);
     }
 }

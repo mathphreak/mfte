@@ -21,7 +21,7 @@ fn render_file(mut out: &mut Terminal, file: &File) {
     let mut x = 1;
     let mut y = 1;
 
-    for (line_number_maybe, line) in file.wrapped_lines((screen_width - LINENO_CHARS - 1, screen_height)) {
+    for (line_number_maybe, line) in file.wrapped_lines((screen_width - LINENO_CHARS - 1, screen_height - 3)) {
         if let Some(line_number) = line_number_maybe {
             out.goto((x, y));
             out.set_color_fg(Color::Grey);
@@ -96,15 +96,22 @@ fn main() {
                     _ => ()
                 }
             },
-            Event::Key(Key::Left) => file.move_cursor_left(file_size),
-            Event::Key(Key::Right) => file.move_cursor_right(file_size),
-            Event::Key(Key::Up) => file.move_cursor_up(file_size),
-            Event::Key(Key::Down) => file.move_cursor_down(file_size),
+            Event::Key(Key::Left) => {
+                screen_dirty = file.move_cursor_left(file_size);
+            },
+            Event::Key(Key::Right) => {
+                screen_dirty = file.move_cursor_right(file_size);
+            },
+            Event::Key(Key::Up) => {
+                screen_dirty = file.move_cursor_up(file_size);
+            },
+            Event::Key(Key::Down) => {
+                screen_dirty = file.move_cursor_down(file_size);
+            },
             Event::Key(Key::Home) => file.move_cursor_home(file_size),
             Event::Key(Key::End) => file.move_cursor_end(file_size),
             Event::Key(Key::Char('\n')) => {
                 file.insert_newline(file_size);
-                file_dirty = true;
                 screen_dirty = true;
             },
             Event::Key(Key::Char(c)) => {
@@ -112,6 +119,9 @@ fn main() {
                 file_dirty = true;
             },
             _ => {}
+        }
+        if screen_dirty {
+            file_dirty = true;
         }
         if file_dirty {
             let new_file_lines = file.lines.len();
