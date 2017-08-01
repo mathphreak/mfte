@@ -229,6 +229,25 @@ impl File {
         self.move_cursor_right(dim);
     }
 
+    pub fn delete(&mut self, dim: (i32, i32)) {
+        let x = self.caret.x as usize - 1;
+        if x == self.current_line().len() {
+            let y = self.caret.y as usize - 1;
+            if y < self.lines.len() - 1 {
+                let next_line = self.lines.remove(y + 1);
+                self.lines[y].push_str(&next_line);
+            }
+        } else {
+            let line = &mut self.lines[self.caret.y as usize - 1];
+            line.remove(x);
+        }
+    }
+
+    pub fn backspace(&mut self, dim: (i32, i32)) {
+        self.move_cursor_left(dim);
+        self.delete(dim);
+    }
+
     pub fn insert_newline(&mut self, dim: (i32, i32)) {
         let after = {
             let before = &mut self.lines[self.caret.y as usize - 1];

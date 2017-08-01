@@ -114,8 +114,16 @@ fn main() {
                 file.insert_newline(file_size);
                 screen_dirty = true;
             },
+            Event::Key(Key::Delete) => {
+                file.delete(file_size);
+                screen_dirty = true;
+            },
+            Event::Key(Key::Backspace) => {
+                file.backspace(file_size);
+                screen_dirty = true;
+            },
             Event::Key(Key::Char(c)) => {
-                file.insert(term.get_size(), c);
+                file.insert(file_size, c);
                 file_dirty = true;
             },
             _ => {}
