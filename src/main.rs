@@ -82,6 +82,10 @@ fn main() {
     let file_size = (screen_w - LINENO_CHARS - 1, screen_h - 3);
     term.goto((file.cursor(file_size).x + LINENO_CHARS + 1, file.cursor(file_size).y));
     term.flush().unwrap();
+    let mut file_lines = file.lines.len();
+    let mut file_wrapped_lines = file.wrapped_lines(file_size).len();
+    let mut file_dirty = false;
+    let mut screen_dirty = false;
     for evt in term.keys() {
         let (screen_w, screen_h) = term.get_size();
         let file_size = (screen_w - LINENO_CHARS - 1, screen_h - 3);
@@ -98,9 +102,30 @@ fn main() {
             Event::Key(Key::Down) => file.move_cursor_down(file_size),
             Event::Key(Key::Char(c)) => {
                 file.insert(term.get_size(), c);
-                render_file(&mut term, &file);
+                file_dirty = true;
             },
             _ => {}
+        }
+        if file_dirty {
+            let new_file_lines = file.lines.len();
+            let new_file_wrapped_lines = file.wrapped_lines(file_size).len();
+            if new_file_lines != file_lines {
+                screen_dirty = true;
+                file_lines = new_file_lines;
+            }
+            if new_file_wrapped_lines != file_wrapped_lines {
+                screen_dirty = true;
+                file_wrapped_lines = new_file_wrapped_lines;
+            }
+        }
+        if screen_dirty {
+            term.clear();
+            render_footer(&mut term, &keys);
+            screen_dirty = false;
+        }
+        if file_dirty {
+            render_file(&mut term, &file);
+            file_dirty = false;
         }
         render_status(&mut term, &file);
         term.goto((file.cursor(file_size).x + LINENO_CHARS + 1, file.cursor(file_size).y));
