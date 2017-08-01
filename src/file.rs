@@ -137,4 +137,13 @@ impl File {
         }
         self.move_cursor_right(dim);
     }
+
+    pub fn insert_newline(&mut self, dim: (i32, i32)) {
+        let after = {
+            let before = &mut self.lines[self.file_cursor.y as usize - 1];
+            before.split_off(self.file_cursor.x as usize - 1)
+        };
+        self.lines.insert(self.file_cursor.y as usize, after);
+        self.move_cursor_right(dim);
+    }
 }
