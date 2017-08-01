@@ -100,6 +100,8 @@ fn main() {
             Event::Key(Key::Right) => file.move_cursor_right(file_size),
             Event::Key(Key::Up) => file.move_cursor_up(file_size),
             Event::Key(Key::Down) => file.move_cursor_down(file_size),
+            Event::Key(Key::Home) => file.move_cursor_home(file_size),
+            Event::Key(Key::End) => file.move_cursor_end(file_size),
             Event::Key(Key::Char('\n')) => {
                 file.insert_newline(file_size);
                 file_dirty = true;
