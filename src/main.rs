@@ -13,23 +13,21 @@ use file::*;
 mod terminal;
 use terminal::*;
 
-const LINENO_CHARS : i32 = 3;
-
 fn render_file(mut out: &mut Terminal, file: &File) {
     let (screen_width, screen_height) = out.get_size();
 
     let mut x = 1;
     let mut y = 1;
 
-    for (line_number_maybe, line) in file.wrapped_lines((screen_width - LINENO_CHARS - 1, screen_height - 3)) {
+    for (line_number_maybe, line) in file.wrapped_lines((screen_width - file.lineno_chars() - 1, screen_height - 3)) {
         if let Some(line_number) = line_number_maybe {
             out.goto((x, y));
             out.set_color_fg(Color::Grey);
             write!(out, "{:1$}",
-                   line_number + 1, LINENO_CHARS as usize).unwrap();
+                   line_number + 1, file.lineno_chars() as usize).unwrap();
             out.set_color_fg(Color::Reset);
         }
-        x += LINENO_CHARS + 1;
+        x += file.lineno_chars() + 1;
         out.goto((x, y));
         write!(out, "{}", line).unwrap();
         x = 1;
@@ -60,7 +58,7 @@ fn render_footer(mut out: &mut Terminal, keys: &KeybindTable) {
 
 fn render_status(mut out: &mut Terminal, file: &File) {
     let (width, height) = out.get_size();
-    let file_size = (width - LINENO_CHARS - 1, height - 3);
+    let file_size = (width - file.lineno_chars() - 1, height - 3);
     let x = 1;
     let y = height;
     out.goto((x, y));
@@ -79,8 +77,8 @@ fn main() {
     render_file(&mut term, &file);
     render_status(&mut term, &file);
     let (screen_w, screen_h) = term.get_size();
-    let file_size = (screen_w - LINENO_CHARS - 1, screen_h - 3);
-    term.goto((file.cursor(file_size).x + LINENO_CHARS + 1, file.cursor(file_size).y));
+    let file_size = (screen_w - file.lineno_chars() - 1, screen_h - 3);
+    term.goto((file.cursor(file_size).x + file.lineno_chars() + 1, file.cursor(file_size).y));
     term.flush().unwrap();
     let mut file_lines = file.lines.len();
     let mut file_wrapped_lines = file.wrapped_lines(file_size).len();
@@ -88,7 +86,7 @@ fn main() {
     let mut screen_dirty = false;
     for evt in term.keys() {
         let (screen_w, screen_h) = term.get_size();
-        let file_size = (screen_w - LINENO_CHARS - 1, screen_h - 3);
+        let file_size = (screen_w - file.lineno_chars() - 1, screen_h - 3);
         match evt {
             Event::Mouse(_) => (),
             Event::Unsupported(_) => (),
@@ -177,7 +175,7 @@ fn main() {
             file_dirty = false;
         }
         render_status(&mut term, &file);
-        term.goto((file.cursor(file_size).x + LINENO_CHARS + 1, file.cursor(file_size).y));
+        term.goto((file.cursor(file_size).x + file.lineno_chars() + 1, file.cursor(file_size).y));
         term.flush().unwrap();
     }
 }

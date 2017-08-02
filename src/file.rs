@@ -138,6 +138,10 @@ impl File {
         }
     }
 
+    pub fn lineno_chars(&self) -> i32 {
+        format!("{}", self.lines.len()).len() as i32
+    }
+
     pub fn wrapped_lines(&self, dim: (i32, i32)) -> Vec<(Option<u16>, String)> {
         let mut result = vec![];
         let width = dim.0 as usize;
