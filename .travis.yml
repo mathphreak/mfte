@@ -9,6 +9,7 @@ rust:
 matrix:
   allow_failures:
   - rust: nightly
+before_script: rvm get stable
 jobs:
   include:
   - stage: deploy

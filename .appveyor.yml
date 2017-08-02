@@ -108,3 +108,4 @@ deploy:
   artifact: target\release\mfte.exe
   on:
     appveyor_repo_tag: true
+    channel: stable
