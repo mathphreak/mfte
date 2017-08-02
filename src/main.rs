@@ -129,6 +129,12 @@ fn main() {
                 file.page_down(file_size);
                 screen_dirty = true;
             },
+            Event::Key(Key::Char('\t')) => {
+                for _ in 0..4 {
+                    file.insert(file_size, ' ');
+                }
+                file_dirty = true;
+            },
             Event::Key(Key::Char('\n')) => {
                 file.insert_newline(file_size);
                 screen_dirty = true;
