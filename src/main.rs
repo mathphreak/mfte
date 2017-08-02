@@ -133,6 +133,7 @@ fn main() {
                     Some(Command::SaveFile) => {
                         let mut ols = OneLinerState::from(Command::SaveFile);
                         ols.file.lines[0] = state.file.name.clone();
+                        ols.file.move_cursor_end(file_size);
                         state.one_liner = Some(ols);
                         screen_dirty = true;
                     },
