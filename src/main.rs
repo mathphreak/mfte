@@ -86,7 +86,7 @@ fn render_status(out: &mut Terminal, state: &EditorState) {
 }
 
 fn render_one_liner(out: &mut Terminal, state: &EditorState) {
-    if let Some(ref ols) = state.one_liner {
+    if let &Some(ref ols) = state.one_liner() {
         let (_, screen_height) = out.get_size();
         let mut y = screen_height - 3;
         if state.files.len() > 1 {
@@ -134,7 +134,7 @@ fn main() {
     let mut state = EditorState {
         keys: KeybindTable::default(),
         files: vec![File::open(&filename)],
-        one_liner: None,
+        one_liners: vec![None],
         active_file: 0,
     };
     render_footer(&mut term, &state);
@@ -156,12 +156,11 @@ fn main() {
             Event::Key(Key::Insert) => (),
             Event::Key(Key::F(_)) => (),
             Event::Key(Key::Esc) => {
-                state.one_liner = None;
+                state.one_liner_mut().take();
                 screen_dirty = true;
             },
             Event::Key(Key::Ctrl('\t')) => {
-                state.active_file += 1;
-                state.active_file %= state.files.len();
+                state.next_tab();
                 screen_dirty = true;
             }
             Event::Key(k @ Key::Ctrl(_)) | Event::Key(k @ Key::Alt(_)) => {
@@ -172,28 +171,26 @@ fn main() {
                         screen_dirty = true;
                     },
                     Some(Command::NewTab) => {
-                        state.files.push(File::empty());
-                        state.active_file += 1;
+                        state.new_tab();
                         screen_dirty = true;
                     },
                     Some(Command::SaveFile) => {
                         let mut ols = OneLinerState::from(Command::SaveFile);
                         ols.file.lines[0] = state.active_file().name.clone();
                         ols.file.move_cursor_end(file_size);
-                        state.one_liner = Some(ols);
+                        state.set_one_liner(ols);
                         screen_dirty = true;
                     },
                     Some(Command::OpenFile) => {
                         let ols = OneLinerState::from(Command::OpenFile);
-                        state.one_liner = Some(ols);
+                        state.set_one_liner(ols);
                         screen_dirty = true;
                     },
                     Some(Command::CloseFile) => {
-                        state.files.remove(state.active_file);
+                        state.close_tab();
                         if state.files.len() == 0 {
                             break;
                         }
-                        state.active_file %= state.files.len();
                         screen_dirty = true;
                     },
                     None => (),
@@ -222,16 +219,18 @@ fn main() {
                 state.page_down(file_size);
                 screen_dirty = true;
             },
-            Event::Key(Key::Char('\t')) => {
-                if let Some(ref mut ols) = state.one_liner {
+            Event::Key(Key::Char('\t')) if state.one_liner_active() => {
+                if let &mut Some(ref mut ols) = state.one_liner_mut() {
                     match ols.command {
                         Command::SaveFile | Command::OpenFile => ols.tab(),
                         _ => ()
                     }
-                } else {
-                    for _ in 0..4 {
-                        state.insert(file_size, ' ');
-                    }
+                }
+                file_dirty = true;
+            },
+            Event::Key(Key::Char('\t')) => {
+                for _ in 0..4 {
+                    state.insert(file_size, ' ');
                 }
                 file_dirty = true;
             },

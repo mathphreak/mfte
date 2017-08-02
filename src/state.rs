@@ -66,17 +66,30 @@ impl OneLinerState {
 pub struct EditorState {
     pub keys: KeybindTable,
     pub files: Vec<File>,
-    pub one_liner: Option<OneLinerState>,
+    pub one_liners: Vec<Option<OneLinerState>>,
     pub active_file: usize,
 }
+
+/* Man, I hate Rust sometimes.
+ * This used to look like
+ *     match self.one_liner_mut() {
+ *         &mut Some(ref mut ols) => ols.file.$func(dim),
+ *         &mut None => self.active_file_mut().$func(dim)
+ *     }
+ * but both _mut() calls borrow self mutably, and apparently that's not legal.
+ * Even though I'm done with the borrow I'm matching on by the time I get to that arm.
+ *
+ * Too much research later, apparently they're working on it: https://github.com/rust-lang/rfcs/issues/811
+ */
 
 macro_rules! split_func {
     ($func:ident -> $ret:ty) => {
         pub fn $func(&mut self, dim: (i32, i32)) -> $ret {
-            match self.one_liner {
-                Some(ref mut ols) => ols.file.$func(dim),
-                None => self.active_file_mut().$func(dim)
+            match self.one_liner_mut() {
+                &mut Some(ref mut ols) => return ols.file.$func(dim),
+                _ => ()
             }
+            self.active_file_mut().$func(dim)
         }
     };
     ($func:ident) => {split_func!($func -> ());};
@@ -85,9 +98,9 @@ macro_rules! split_func {
 macro_rules! restrict_func {
     ($func:ident -> $ret:ty, $default:expr) => {
         pub fn $func(&mut self, dim: (i32, i32)) -> $ret {
-            match self.one_liner {
-                Some(_) => $default,
-                None => self.active_file_mut().$func(dim)
+            match self.one_liner() {
+                &Some(_) => $default,
+                &None => self.active_file_mut().$func(dim)
             }
         }
     };
@@ -100,11 +113,11 @@ impl EditorState {
     }
 
     pub fn one_liner_active(&self) -> bool {
-        self.one_liner.is_some()
+        self.one_liner().is_some()
     }
 
     pub fn consume_one_liner(&mut self) -> Option<(Command, String)> {
-        let result = self.one_liner.take().map(|ol| (ol.command.clone(), (*ol.value()).clone()));
+        let result = self.one_liner_mut().take().map(|ol| (ol.command.clone(), (*ol.value()).clone()));
         result
     }
 
@@ -120,13 +133,25 @@ impl EditorState {
         &mut self.files[self.active_file]
     }
 
+    pub fn one_liner(&self) -> &Option<OneLinerState> {
+        &self.one_liners[self.active_file]
+    }
+
+    pub fn one_liner_mut(&mut self) -> &mut Option<OneLinerState> {
+        &mut self.one_liners[self.active_file]
+    }
+
+    pub fn set_one_liner(&mut self, ol: OneLinerState) {
+        self.one_liners[self.active_file] = Some(ol);
+    }
+
     pub fn cursor(&self, dim: (i32, i32)) -> (i32, i32) {
-        match self.one_liner {
-            Some(ref ols) => {
+        match self.one_liner() {
+            &Some(ref ols) => {
                 let cursor = ols.file.cursor(dim);
                 (cursor.x + ols.label.len() as i32 + 1, dim.1 + 1)
             },
-            None => {
+            &None => {
                 let cursor = self.active_file().cursor(dim);
                 (cursor.x + self.active_file().lineno_chars() + 1, cursor.y)
             }
@@ -145,6 +170,24 @@ impl EditorState {
         self.active_file_mut().refresh(dim)
     }
 
+    pub fn new_tab(&mut self) {
+        self.active_file += 1;
+        self.files.insert(self.active_file, File::empty());
+        self.one_liners.insert(self.active_file, None);
+    }
+
+    pub fn close_tab(&mut self) {
+        self.files.remove(self.active_file);
+        self.one_liners.remove(self.active_file);
+        if self.files.len() > 0 {
+            self.active_file %= self.files.len();
+        }
+    }
+
+    pub fn next_tab(&mut self) {
+        self.active_file = (self.active_file + 1) % self.files.len();
+    }
+
     split_func!(move_cursor_left -> bool);
     split_func!(move_cursor_right -> bool);
     restrict_func!(move_cursor_up -> bool, false);
@@ -155,9 +198,9 @@ impl EditorState {
     restrict_func!(page_down);
 
     pub fn insert_newline(&mut self, dim: (i32, i32)) {
-        match self.one_liner {
-            Some(_) => panic!("Can't insert newline in one liner! That's the point!"),
-            None => self.active_file_mut().insert_newline(dim)
+        match self.one_liner() {
+            &Some(_) => panic!("Can't insert newline in one liner! That's the point!"),
+            &None => self.active_file_mut().insert_newline(dim)
         }
     }
 
@@ -165,10 +208,11 @@ impl EditorState {
     split_func!(backspace);
 
     pub fn insert(&mut self, dim: (i32, i32), c: char) {
-        match self.one_liner {
-            Some(ref mut ols) => ols.file.insert(dim, c),
-            None => self.active_file_mut().insert(dim, c)
-        }
+        match self.one_liner_mut() {
+            &mut Some(ref mut ols) => return ols.file.insert(dim, c),
+            _ => ()
+        };
+        self.active_file_mut().insert(dim, c)
     }
 
     pub fn save_file(&self, path: &str) {
