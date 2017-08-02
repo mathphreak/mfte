@@ -316,3 +316,19 @@ impl File {
         self.move_cursor_right(dim);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn load_save_preserves_everything() {
+        let f = File::open("README.md");
+        f.save("readme.bak");
+        let orig = fs::File::open("README.md").unwrap();
+        let new = fs::File::open("readme.bak").unwrap();
+        for (b1, b2) in orig.bytes().zip(new.bytes()) {
+            assert_eq!(b1.unwrap(), b2.unwrap());
+        }
+        fs::remove_file("readme.bak").unwrap();
+    }
+}
