@@ -66,7 +66,11 @@ fn get_key(e: wincon::KEY_EVENT_RECORD) -> Option<Key> {
         },
         _ => (),
     };
-    Some(char_mod(e.UnicodeChar as u8 as char))
+    if e.UnicodeChar == 0 {
+        Some(Key::Null)
+    } else {
+        Some(char_mod(e.UnicodeChar as u8 as char))
+    }
 }
 
 fn get_mouse_event(e: wincon::MOUSE_EVENT_RECORD) -> Option<MouseEvent> {

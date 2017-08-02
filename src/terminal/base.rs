@@ -34,7 +34,7 @@ pub enum Key {
     Char(char),
     Alt(char),
     Ctrl(char),
-    #[allow(dead_code)] Null,
+    Null,
     Esc,
 }
 
