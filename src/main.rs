@@ -99,18 +99,11 @@ fn main() {
             Event::Key(Key::Insert) => (),
             Event::Key(Key::F(_)) => (),
             Event::Key(Key::Esc) => (),
-            Event::Key(Key::Ctrl(k)) => {
-                match keys.lookup(Key::Ctrl(k)) {
+            Event::Key(k @ Key::Ctrl(_)) | Event::Key(k @ Key::Alt(_)) => {
+                match keys.lookup(k) {
                     Some(Command::Quit) => break,
-                    Some(c) => run_command(c),
-                    None => ()
-                }
-            },
-            Event::Key(Key::Alt(k)) => {
-                match keys.lookup(Key::Alt(k)) {
-                    Some(Command::Quit) => break,
-                    Some(c) => run_command(c),
-                    None => ()
+                    None => (),
+                    _ => ()
                 }
             },
             Event::Key(Key::Left) => {
