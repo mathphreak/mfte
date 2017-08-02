@@ -214,6 +214,18 @@ impl File {
         self.caret.move_end(dim, &self.lines);
     }
 
+    pub fn page_up(&mut self, dim: (i32, i32)) {
+        for n in 0..dim.1 {
+            self.move_cursor_up(dim);
+        }
+    }
+
+    pub fn page_down(&mut self, dim: (i32, i32)) {
+        for n in 0..dim.1 {
+            self.move_cursor_down(dim);
+        }
+    }
+
     pub fn insert(&mut self, dim: (i32, i32), c: char) {
         {
             let x = self.caret.x - 1;

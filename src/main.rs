@@ -110,6 +110,14 @@ fn main() {
             },
             Event::Key(Key::Home) => file.move_cursor_home(file_size),
             Event::Key(Key::End) => file.move_cursor_end(file_size),
+            Event::Key(Key::PageUp) => {
+                file.page_up(file_size);
+                screen_dirty = true;
+            },
+            Event::Key(Key::PageDown) => {
+                file.page_down(file_size);
+                screen_dirty = true;
+            },
             Event::Key(Key::Char('\n')) => {
                 file.insert_newline(file_size);
                 screen_dirty = true;
