@@ -67,6 +67,9 @@ fn render_status(mut out: &mut Terminal, file: &File) {
     write!(out, "{}", file.debug(file_size)).unwrap();
 }
 
+fn run_command(c: Command) {
+}
+
 fn main() {
     let keys = KeybindTable::default();
     let mut term = Terminal::default();
@@ -90,10 +93,24 @@ fn main() {
         let (screen_w, screen_h) = term.get_size();
         let file_size = (screen_w - LINENO_CHARS - 1, screen_h - 3);
         match evt {
+            Event::Mouse(_) => (),
+            Event::Unsupported(_) => (),
+            Event::Key(Key::Null) => (),
+            Event::Key(Key::Insert) => (),
+            Event::Key(Key::F(_)) => (),
+            Event::Key(Key::Esc) => (),
             Event::Key(Key::Ctrl(k)) => {
                 match keys.lookup(Key::Ctrl(k)) {
                     Some(Command::Quit) => break,
-                    _ => ()
+                    Some(c) => run_command(c),
+                    None => ()
+                }
+            },
+            Event::Key(Key::Alt(k)) => {
+                match keys.lookup(Key::Alt(k)) {
+                    Some(Command::Quit) => break,
+                    Some(c) => run_command(c),
+                    None => ()
                 }
             },
             Event::Key(Key::Left) => {
@@ -134,7 +151,6 @@ fn main() {
                 file.insert(file_size, c);
                 file_dirty = true;
             },
-            _ => {}
         }
         if screen_dirty {
             file_dirty = true;
