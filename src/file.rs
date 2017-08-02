@@ -5,6 +5,8 @@ use std::path::Path;
 use std::cmp;
 use std::fmt;
 
+use super::indent::Indented;
+
 pub struct Cursor {
     pub x: i32,
     pub y: i32,
@@ -35,8 +37,8 @@ impl Cursor {
         if self.x <= self.curr_len(lines) {
             self.x += 1;
         } else if self.y < lines.len() as i32 {
-            self.move_home(dim, lines);
             self.move_down(dim, lines);
+            self.x = 1;
         }
     }
 
@@ -70,9 +72,22 @@ impl Cursor {
         }
     }
 
-    fn move_home(&mut self, dim: (i32, i32), _: &Vec<String>) {
-        // Depend on truncation here to clamp to lower multiple of screen width
-        self.x = ((self.x - 1) / dim.0) * dim.0 + 1;
+    fn move_home(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+        if self.x <= dim.0 {
+            // TODO make this not hard coded
+            if let Some(s) = lines[self.y as usize - 1].indent_end(4) {
+                if self.x != s as i32 + 1 {
+                    self.x = s as i32 + 1;
+                } else {
+                    self.x = 1;
+                }
+            } else {
+                self.x = 1;
+            }
+        } else {
+            // Depend on truncation here to clamp to lower multiple of screen width
+            self.x = ((self.x - 1) / dim.0) * dim.0 + 1;
+        }
     }
 
     fn move_end(&mut self, dim: (i32, i32), lines: &Vec<String>) {
@@ -104,6 +119,7 @@ pub struct File {
     caret: Cursor,
     window_top: Cursor,
     last_dim: (i32, i32),
+    tab_width: u8,
     misc: String,
 }
 
@@ -121,6 +137,7 @@ impl File {
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
+            tab_width: 4,
             misc: String::from(""),
         }
     }
@@ -140,6 +157,7 @@ impl File {
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
+            tab_width: 4,
             misc: String::from(""),
         }
     }
@@ -303,23 +321,44 @@ impl File {
                 self.lines[y].push_str(&next_line);
             }
         } else {
+            let end = self.current_line().indent_end(self.tab_width);
             let line = &mut self.lines[self.caret.y as usize - 1];
-            line.remove(x);
+            let mut indented = end.is_some();
+            if let Some(s) = end {
+                indented = x as i32 <= s - self.tab_width as i32;
+            }
+            if indented {
+                line.pop_indentation(self.tab_width);
+            } else {
+                line.remove(x);
+            }
         }
     }
 
     pub fn backspace(&mut self, dim: (i32, i32)) {
-        self.move_cursor_left(dim);
+        let x = self.caret.x as usize - 1;
+        if x as i32 <= self.current_line().indent_end(self.tab_width).unwrap_or(-1) {
+            self.caret.x -= self.tab_width as i32;
+        } else {
+            self.move_cursor_left(dim);
+        }
         self.delete(dim);
     }
 
     pub fn insert_newline(&mut self, dim: (i32, i32)) {
-        let after = {
+        let (mut after, n) = {
             let before = &mut self.lines[self.caret.y as usize - 1];
-            before.split_off(self.caret.x as usize - 1)
+            let n = before.indent_end(self.tab_width);
+            (before.split_off(self.caret.x as usize - 1), n)
         };
+        if let Some(n) = n {
+            after.insert_str(0, &" ".repeat(n as usize));
+        }
         self.lines.insert(self.caret.y as usize, after);
         self.move_cursor_right(dim);
+        if let Some(n) = n {
+            self.caret.x += n;
+        }
     }
 }
 

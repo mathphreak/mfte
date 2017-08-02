@@ -16,6 +16,8 @@ use terminal::*;
 mod state;
 use state::*;
 
+mod indent;
+
 fn get_file_size(term: &Terminal, state: &EditorState) -> (i32, i32) {
     let (screen_w, screen_h) = term.get_size();
     let one_liner_offset = match state.one_liner_active() {
