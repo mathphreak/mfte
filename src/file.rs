@@ -143,6 +143,7 @@ impl File {
         let f = fs::OpenOptions::new()
             .write(true)
             .create(true)
+            .truncate(true)
             .open(path)
             .expect("Could not open file");
         let mut f = io::BufWriter::new(f);
