@@ -89,6 +89,13 @@ impl Cursor {
             y_offset: 0,
         }
     }
+
+    fn recompute_offset(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+        self.y_offset = 0;
+        for i in 0..(self.y - 1) {
+            self.y_offset += lines[i as usize].len() as i32 / dim.0;
+        }
+    }
 }
 
 pub struct File {
@@ -162,11 +169,18 @@ impl File {
 
     fn recompute_offsets(&mut self, dim: (i32, i32)) {
         if dim != self.last_dim {
-            panic!("AAA I CAN'T DO THIS YET");
+            self.caret.recompute_offset(dim, &self.lines);
+            self.window_top.recompute_offset(dim, &self.lines);
+            self.last_dim = dim;
         }
     }
 
+    pub fn refresh(&mut self, dim: (i32, i32)) {
+        self.recompute_offsets(dim);
+    }
+
     pub fn move_cursor_left(&mut self, dim: (i32, i32)) -> bool {
+        self.recompute_offsets(dim);
         self.caret.move_left(dim, &self.lines);
         if self.cursor(dim).y < 1 {
             self.window_top.move_up(dim, &self.lines);
@@ -177,6 +191,7 @@ impl File {
     }
 
     pub fn move_cursor_right(&mut self, dim: (i32, i32)) -> bool {
+        self.recompute_offsets(dim);
         self.caret.move_right(dim, &self.lines);
         if self.cursor(dim).y > dim.1 {
             self.window_top.move_down(dim, &self.lines);
@@ -187,6 +202,7 @@ impl File {
     }
 
     pub fn move_cursor_up(&mut self, dim: (i32, i32)) -> bool {
+        self.recompute_offsets(dim);
         self.caret.move_up(dim, &self.lines);
         if self.cursor(dim).y < 1 {
             self.window_top.move_up(dim, &self.lines);
@@ -197,6 +213,7 @@ impl File {
     }
 
     pub fn move_cursor_down(&mut self, dim: (i32, i32)) -> bool {
+        self.recompute_offsets(dim);
         self.caret.move_down(dim, &self.lines);
         if self.cursor(dim).y > dim.1 {
             self.window_top.move_down(dim, &self.lines);
@@ -207,10 +224,12 @@ impl File {
     }
 
     pub fn move_cursor_home(&mut self, dim: (i32, i32)) {
+        self.recompute_offsets(dim);
         self.caret.move_home(dim, &self.lines);
     }
 
     pub fn move_cursor_end(&mut self, dim: (i32, i32)) {
+        self.recompute_offsets(dim);
         self.caret.move_end(dim, &self.lines);
     }
 

@@ -67,9 +67,6 @@ fn render_status(mut out: &mut Terminal, file: &File) {
     write!(out, "{}", file.debug(file_size)).unwrap();
 }
 
-fn run_command(c: Command) {
-}
-
 fn main() {
     let keys = KeybindTable::default();
     let mut term = Terminal::default();
@@ -102,6 +99,10 @@ fn main() {
             Event::Key(k @ Key::Ctrl(_)) | Event::Key(k @ Key::Alt(_)) => {
                 match keys.lookup(k) {
                     Some(Command::Quit) => break,
+                    Some(Command::Refresh) => {
+                        file.refresh(file_size);
+                        screen_dirty = true;
+                    },
                     None => (),
                     _ => ()
                 }

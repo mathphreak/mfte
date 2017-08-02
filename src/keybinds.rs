@@ -12,6 +12,7 @@ const DEFAULT_KEYBINDS: &'static str = r#"^Q: Quit
 ^H: FindReplace
 ^Z: Undo
 ^Y: Redo
+^R: Refresh
 "#;
 
 macro_attr! {
@@ -27,7 +28,8 @@ macro_attr! {
         Find,
         FindReplace,
         Undo,
-        Redo
+        Redo,
+        Refresh,
     }
 }
 
