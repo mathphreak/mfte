@@ -7,6 +7,8 @@
 Because I am terrible and bad at everything, I'm writing a text editor.
 Vim and Emacs are too complicated. Nano does almost everything I want. (I don't have an ideological grievance against Electron, but I think using it for a text editor is silly.)
 
+It's pronounced "mifty" (rhymes with "nifty").
+
 Also works on Windows. Apparently nobody has written a cross-platform TUI library for Rust yet. I should probably get on that.
 
 RULES:
