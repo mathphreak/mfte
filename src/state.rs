@@ -44,7 +44,7 @@ impl OneLinerState {
             path.pop();
         }
         let results: Vec<String> = path.read_dir().expect("did not get a dir").filter_map(|e| e.ok().and_then(|e| {
-            let mut name = e.file_name().into_string().unwrap();
+            let name = e.file_name().into_string().unwrap();
             if name.starts_with(&fragment) {
                 Some(name)
             } else {
