@@ -30,6 +30,36 @@ impl OneLinerState {
     pub fn value(&self) -> &String {
         &self.file.lines[0]
     }
+
+    pub fn tab(&mut self) {
+        // TODO figure out if any of this is a good idea
+        use std::path::PathBuf;
+        let mut path = PathBuf::from(self.value());
+        if path.file_name().is_none() {
+            path = PathBuf::from(".");
+        }
+        let mut fragment = String::from("");
+        if !path.is_dir() {
+            fragment = path.file_name().unwrap().to_os_string().into_string().unwrap();
+            path.pop();
+        }
+        let results: Vec<String> = path.read_dir().expect("did not get a dir").filter_map(|e| e.ok().and_then(|e| {
+            let mut name = e.file_name().into_string().unwrap();
+            if name.starts_with(&fragment) {
+                Some(name)
+            } else {
+                None
+            }
+        })).collect();
+        if results.len() == 1 {
+            path.push(results[0].clone());
+            if path.is_dir() {
+                path.push("");
+            }
+            self.file.lines[0] = path.into_os_string().into_string().unwrap();
+            self.file.move_cursor_end((9001, 9001));
+        }
+    }
 }
 
 pub struct EditorState {

@@ -164,8 +164,15 @@ fn main() {
                 screen_dirty = true;
             },
             Event::Key(Key::Char('\t')) => {
-                for _ in 0..4 {
-                    state.insert(file_size, ' ');
+                if let Some(ref mut ols) = state.one_liner {
+                    match ols.command {
+                        Command::SaveFile | Command::OpenFile => ols.tab(),
+                        _ => ()
+                    }
+                } else {
+                    for _ in 0..4 {
+                        state.insert(file_size, ' ');
+                    }
                 }
                 file_dirty = true;
             },
