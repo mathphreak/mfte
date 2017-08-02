@@ -13,13 +13,11 @@ use file::*;
 mod terminal;
 use terminal::*;
 
-fn render_file(mut out: &mut Terminal, file: &File) {
-    let (screen_width, screen_height) = out.get_size();
-
+fn render_file(out: &mut Terminal, file_size: (i32, i32), file: &File) {
     let mut x = 1;
     let mut y = 1;
 
-    for (line_number_maybe, line) in file.wrapped_lines((screen_width - file.lineno_chars() - 1, screen_height - 3)) {
+    for (line_number_maybe, line) in file.wrapped_lines(file_size) {
         if let Some(line_number) = line_number_maybe {
             out.goto((x, y));
             out.set_color_fg(Color::Grey);
@@ -35,7 +33,7 @@ fn render_file(mut out: &mut Terminal, file: &File) {
     }
 }
 
-fn render_footer(mut out: &mut Terminal, keys: &KeybindTable) {
+fn render_footer(out: &mut Terminal, keys: &KeybindTable) {
     let (screen_width, screen_height) = out.get_size();
 
     let mut x = 1;
@@ -56,13 +54,17 @@ fn render_footer(mut out: &mut Terminal, keys: &KeybindTable) {
     }
 }
 
-fn render_status(mut out: &mut Terminal, file: &File) {
-    let (width, height) = out.get_size();
-    let file_size = (width - file.lineno_chars() - 1, height - 3);
+fn render_status(out: &mut Terminal, file_size: (i32, i32), file: &File) {
+    let (_, height) = out.get_size();
     let x = 1;
     let y = height;
     out.goto((x, y));
     write!(out, "{}", file.debug(file_size)).unwrap();
+}
+
+fn get_file_size(term: &Terminal, file: &File) -> (i32, i32) {
+    let (screen_w, screen_h) = term.get_size();
+    (screen_w - file.lineno_chars() - 1, screen_h - 3)
 }
 
 fn main() {
@@ -74,10 +76,9 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let filename = args.get(1).cloned().unwrap_or(String::from("README.md"));
     let mut file = File::open(&filename);
-    render_file(&mut term, &file);
-    render_status(&mut term, &file);
-    let (screen_w, screen_h) = term.get_size();
-    let file_size = (screen_w - file.lineno_chars() - 1, screen_h - 3);
+    let file_size = get_file_size(&term, &file);
+    render_file(&mut term, file_size, &file);
+    render_status(&mut term, file_size, &file);
     term.goto((file.cursor(file_size).x + file.lineno_chars() + 1, file.cursor(file_size).y));
     term.flush().unwrap();
     let mut file_lines = file.lines.len();
@@ -85,8 +86,7 @@ fn main() {
     let mut file_dirty = false;
     let mut screen_dirty = false;
     for evt in term.keys() {
-        let (screen_w, screen_h) = term.get_size();
-        let file_size = (screen_w - file.lineno_chars() - 1, screen_h - 3);
+        let file_size = get_file_size(&term, &file);
         match evt {
             Event::Mouse(_) => (),
             Event::Unsupported(_) => (),
@@ -171,10 +171,10 @@ fn main() {
             screen_dirty = false;
         }
         if file_dirty {
-            render_file(&mut term, &file);
+            render_file(&mut term, file_size, &file);
             file_dirty = false;
         }
-        render_status(&mut term, &file);
+        render_status(&mut term, file_size, &file);
         term.goto((file.cursor(file_size).x + file.lineno_chars() + 1, file.cursor(file_size).y));
         term.flush().unwrap();
     }
