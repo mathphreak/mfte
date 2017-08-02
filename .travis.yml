@@ -1,11 +1,28 @@
 os:
-  - linux
-  - osx
+- linux
+- osx
 language: rust
 rust:
-  - stable
-  - beta
-  - nightly
+- stable
+- beta
+- nightly
 matrix:
   allow_failures:
-    - rust: nightly
+  - rust: nightly
+jobs:
+  include:
+  - stage: deploy
+    rust: stable
+    script:
+    - cargo build --release
+    - mkdir dist
+    - mv target/release/mfte dist/mfte-$(uname)
+    deploy:
+      provider: releases
+      skip_cleanup: true
+      file_glob: true
+      api_key:
+        secure: hh84v6fwvW3tFYhZPclS3sQDEDlL5fwZUXt9qVRIzVZPYqFvVFijWfQX6P5NLuBqeNmmLXw4GhFGHY8EIqcpm/VhlouZ9A3NxXVQy5qudyTMJSMZu1ex5sRtn26yDB/eoxuDlIXNONxiaNhzThHysY7lg0FCSW6XMDqmmZxrkrjvkofVgJHmufdZZKv2hp5Vh0pLVv2MRoNuKQ1d+2KVlu5U/veH6gEnw6Ocmk0QGXJy3DzL1EGcEKdZtjPMqnR0+CoxsHgQEWALQbsmFOYYZ8SRLwd7SSi5PddgFZ3GycAWeCPaWaJZxKPv630G14LinByo6QQdTpaQGgFfm14v33ztNor/s23CpOTtTxUwgY6RAC60Hh2C3AfsBbKDF/RXj6MJBWRzvJ2+t1HuPDcUXL+bKqzUbywfdUBqh7Erca4sjpXUkoHng9U8eWjp9YVK6hOeHtbHU/COIUvY3i9cBLb4S33hTo8+4pR6LHuWPSwQkX8WT1B8IR5JAIOMsQN865pLJ8qkupwA7mXJZf6tOD2oVTqMRN1w5anYobibcLNp8OkFmsXIfJ6SyYbL843G9n8NDKpw561M++TILYAUG+BFlc4GeKBAHfi3Hhy3IB612Z0qbz9VjgVzK5f3uq3ccuvvO/xakQn7R6vXEHXO65grjU/EpJgJuEfUeXLbkk0=
+      file: dist/*
+      on:
+        repo: mathphreak/mfte

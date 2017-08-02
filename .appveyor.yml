@@ -89,10 +89,22 @@ install:
 
 # 'cargo test' takes care of building for us, so disable Appveyor's build stage. This prevents
 # the "directory does not contain a project or solution file" error.
-build: false
+# build: false
+build_script:
+  - cargo build --release
 
 # Uses 'cargo test' to run tests and build. Alternatively, the project may call compiled programs
 #directly or perform other testing commands. Rust will automatically be placed in the PATH
 # environment variable.
 test_script:
   - cargo test --verbose %cargoflags%
+
+## GitHub Releases Deployment ##
+deploy:
+  description: 'mfte'
+  provider: GitHub
+  auth_token:
+    secure: CyVbWhf9A9aWuXsJALK7rDaL8N23uVRoU0X/YxYsHBK++/kY21YDEPvFTE197vCf
+  artifact: target\release\mfte.exe
+  on:
+    appveyor_repo_tag: true
