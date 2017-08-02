@@ -129,9 +129,14 @@ impl File {
         let f = fs::File::open(path).expect("Could not open file");
         let f = io::BufReader::new(f);
 
+        let mut lines: Vec<String> = f.lines().map(|r| r.unwrap()).collect();
+        if lines.len() == 0 {
+            lines.push(String::from(""));
+        }
+
         File {
             name: String::from(Path::new(path).file_name().unwrap().to_string_lossy()),
-            lines: f.lines().map(|r| r.unwrap()).collect(),
+            lines: lines,
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
