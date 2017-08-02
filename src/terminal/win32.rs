@@ -59,7 +59,6 @@ fn get_key(e: wincon::KEY_EVENT_RECORD) -> Option<Key> {
         winapi::VK_DOWN => return Some(Key::Down),
         winapi::VK_INSERT => return Some(Key::Insert),
         winapi::VK_DELETE => return Some(Key::Delete),
-        0x30...0x39 => return Some(char_mod(e.wVirtualKeyCode as u8 as char)),
         0x41...0x5A => return Some(char_mod(e.wVirtualKeyCode as u8 as char)),
         winapi::VK_F1...winapi::VK_F24 => {
             return Some(Key::F((e.wVirtualKeyCode as i32 - winapi::VK_F1 + 1) as u8))
