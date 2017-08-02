@@ -13,7 +13,7 @@ pub enum Color {
 pub enum Event {
     Key(Key),
     Mouse(MouseEvent),
-    Unsupported(Vec<u8>),
+    Unsupported(Vec<u32>),
 }
 
 // Still stolen from termios
@@ -34,7 +34,7 @@ pub enum Key {
     Char(char),
     Alt(char),
     Ctrl(char),
-    Null,
+    #[allow(dead_code)] Null,
     Esc,
 }
 

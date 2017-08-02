@@ -46,7 +46,7 @@ fn get_key(e: wincon::KEY_EVENT_RECORD) -> Option<Key> {
     };
     match e.wVirtualKeyCode as i32 {
         winapi::VK_BACK => return Some(Key::Backspace),
-        winapi::VK_TAB => panic!("What even is tab?"),
+        winapi::VK_TAB => return Some(Key::Char('\t')),
         winapi::VK_RETURN => return Some(Key::Char('\n')),
         winapi::VK_ESCAPE => return Some(Key::Esc),
         winapi::VK_PRIOR => return Some(Key::PageUp),
@@ -71,25 +71,27 @@ fn get_key(e: wincon::KEY_EVENT_RECORD) -> Option<Key> {
 
 fn get_mouse_event(e: wincon::MOUSE_EVENT_RECORD) -> Option<MouseEvent> {
     let pos = e.dwMousePosition;
-    let button = {
-        if e.dwEventFlags == 0 {
-            Some(match e.dwButtonState {
-                wincon::FROM_LEFT_1ST_BUTTON_PRESSED => MouseButton::Left,
-                wincon::RIGHTMOST_BUTTON_PRESSED => MouseButton::Right,
-                _ => MouseButton::Middle
-            })
-        } else if e.dwEventFlags == wincon::MOUSE_WHEELED {
+    let button = match e.dwEventFlags {
+        0 => Some(match e.dwButtonState {
+            0 => {
+                return Some(MouseEvent::Release(pos.X as i32, pos.Y as i32));
+            },
+            wincon::FROM_LEFT_1ST_BUTTON_PRESSED => MouseButton::Left,
+            wincon::RIGHTMOST_BUTTON_PRESSED => MouseButton::Right,
+            _ => MouseButton::Middle
+        }),
+        wincon::MOUSE_WHEELED => Some({
             // Win32 API docs say "if high word is positive, scroll up"
-            // but that's not actually particularly helpful here
-            // but that should be equivalent to "if value is positive, scroll up"
-            if e.dwButtonState >= 0 {
-                Some(MouseButton::WheelUp)
+            if e.dwButtonState.leading_zeros() > 0 {
+                MouseButton::WheelUp
             } else {
-                Some(MouseButton::WheelDown)
+                MouseButton::WheelDown
             }
-        } else {
-            None
-        }
+        }),
+        wincon::MOUSE_MOVED => {
+            return Some(MouseEvent::Hold(pos.X as i32, pos.Y as i32));
+        },
+        _ => None
     };
     if let Some(b) = button {
         Some(MouseEvent::Press(b, pos.X as i32, pos.Y as i32))
@@ -133,7 +135,7 @@ impl Iterator for TerminalKeyStream {
                         return Some(Event::Mouse(e));
                     }
                 },
-                _ => continue
+                _ => return Some(Event::Unsupported(buf.Event.to_vec()))
             }
         }
     }

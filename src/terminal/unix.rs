@@ -74,7 +74,7 @@ impl From<event::Event> for Event {
         match e {
             event::Event::Key(k) => Event::Key(k.into()),
             event::Event::Mouse(m) => Event::Mouse(m.into()),
-            event::Event::Unsupported(v) => Event::Unsupported(v),
+            event::Event::Unsupported(v) => Event::Unsupported(v.iter().map(|x| *x as u32).collect()),
         }
     }
 }

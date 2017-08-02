@@ -70,7 +70,7 @@ impl Cursor {
         }
     }
 
-    fn move_home(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+    fn move_home(&mut self, dim: (i32, i32), _: &Vec<String>) {
         // Depend on truncation here to clamp to lower multiple of screen width
         self.x = ((self.x - 1) / dim.0) * dim.0 + 1;
     }
@@ -234,13 +234,13 @@ impl File {
     }
 
     pub fn page_up(&mut self, dim: (i32, i32)) {
-        for n in 0..dim.1 {
+        for _ in 0..dim.1 {
             self.move_cursor_up(dim);
         }
     }
 
     pub fn page_down(&mut self, dim: (i32, i32)) {
-        for n in 0..dim.1 {
+        for _ in 0..dim.1 {
             self.move_cursor_down(dim);
         }
     }
@@ -260,7 +260,7 @@ impl File {
         self.move_cursor_right(dim);
     }
 
-    pub fn delete(&mut self, dim: (i32, i32)) {
+    pub fn delete(&mut self, _: (i32, i32)) {
         let x = self.caret.x as usize - 1;
         if x == self.current_line().len() {
             let y = self.caret.y as usize - 1;
