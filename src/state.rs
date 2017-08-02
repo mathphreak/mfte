@@ -12,7 +12,8 @@ impl From<Command> for OneLinerState {
         let label = match c {
             Command::Quit | Command::CloseFile | Command::Refresh |
                 Command::Cut | Command::Copy | Command::Paste |
-                Command::Undo | Command::Redo => "",
+                Command::Undo | Command::Redo |
+                Command::NewTab => "",
             Command::OpenFile => "Open file:",
             Command::SaveFile => "Save file:",
             Command::Find => "Find text:",
@@ -64,8 +65,9 @@ impl OneLinerState {
 
 pub struct EditorState {
     pub keys: KeybindTable,
-    pub file: File,
+    pub files: Vec<File>,
     pub one_liner: Option<OneLinerState>,
+    pub active_file: usize,
 }
 
 macro_rules! split_func {
@@ -73,7 +75,7 @@ macro_rules! split_func {
         pub fn $func(&mut self, dim: (i32, i32)) -> $ret {
             match self.one_liner {
                 Some(ref mut ols) => ols.file.$func(dim),
-                None => self.file.$func(dim)
+                None => self.active_file_mut().$func(dim)
             }
         }
     };
@@ -85,7 +87,7 @@ macro_rules! restrict_func {
         pub fn $func(&mut self, dim: (i32, i32)) -> $ret {
             match self.one_liner {
                 Some(_) => $default,
-                None => self.file.$func(dim)
+                None => self.active_file_mut().$func(dim)
             }
         }
     };
@@ -94,15 +96,28 @@ macro_rules! restrict_func {
 
 impl EditorState {
     pub fn lines_len(&self) -> usize {
-        self.file.lines.len()
+        self.active_file().lines.len()
     }
 
     pub fn one_liner_active(&self) -> bool {
         self.one_liner.is_some()
     }
 
+    pub fn consume_one_liner(&mut self) -> Option<(Command, String)> {
+        let result = self.one_liner.take().map(|ol| (ol.command.clone(), (*ol.value()).clone()));
+        result
+    }
+
     pub fn lineno_chars(&self) -> i32 {
-        self.file.lineno_chars()
+        self.active_file().lineno_chars()
+    }
+
+    pub fn active_file(&self) -> &File {
+        &self.files[self.active_file]
+    }
+
+    pub fn active_file_mut(&mut self) -> &mut File {
+        &mut self.files[self.active_file]
     }
 
     pub fn cursor(&self, dim: (i32, i32)) -> (i32, i32) {
@@ -112,18 +127,22 @@ impl EditorState {
                 (cursor.x + ols.label.len() as i32 + 1, dim.1 + 1)
             },
             None => {
-                let cursor = self.file.cursor(dim);
-                (cursor.x + self.file.lineno_chars() + 1, cursor.y)
+                let cursor = self.active_file().cursor(dim);
+                (cursor.x + self.active_file().lineno_chars() + 1, cursor.y)
             }
         }
     }
 
+    pub fn debug(&self, dim: (i32, i32)) -> String {
+        self.active_file().debug(dim)
+    }
+
     pub fn wrapped_lines(&self, dim: (i32, i32)) -> Vec<(Option<u16>, String)> {
-        self.file.wrapped_lines(dim)
+        self.active_file().wrapped_lines(dim)
     }
 
     pub fn refresh(&mut self, dim: (i32, i32)) {
-        self.file.refresh(dim)
+        self.active_file_mut().refresh(dim)
     }
 
     split_func!(move_cursor_left -> bool);
@@ -138,7 +157,7 @@ impl EditorState {
     pub fn insert_newline(&mut self, dim: (i32, i32)) {
         match self.one_liner {
             Some(_) => panic!("Can't insert newline in one liner! That's the point!"),
-            None => self.file.insert_newline(dim)
+            None => self.active_file_mut().insert_newline(dim)
         }
     }
 
@@ -148,11 +167,15 @@ impl EditorState {
     pub fn insert(&mut self, dim: (i32, i32), c: char) {
         match self.one_liner {
             Some(ref mut ols) => ols.file.insert(dim, c),
-            None => self.file.insert(dim, c)
+            None => self.active_file_mut().insert(dim, c)
         }
     }
 
     pub fn save_file(&self, path: &str) {
-        self.file.save(path);
+        self.active_file().save(path);
+    }
+
+    pub fn open_file(&mut self, path: &str) {
+        self.files[self.active_file] = File::open(path);
     }
 }

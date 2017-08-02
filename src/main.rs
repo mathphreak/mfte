@@ -24,7 +24,12 @@ fn get_file_size(term: &Terminal, state: &EditorState) -> (i32, i32) {
         true => 1,
         false => 0
     };
-    (screen_w - state.lineno_chars() - 1, screen_h - one_liner_offset - 3)
+    let tab_bar_offset = if state.files.len() > 1 {
+        1
+    } else {
+        0
+    };
+    (screen_w - state.lineno_chars() - 1, screen_h - one_liner_offset - tab_bar_offset - 3)
 }
 
 fn render_file(out: &mut Terminal, state: &EditorState) {
@@ -32,7 +37,7 @@ fn render_file(out: &mut Terminal, state: &EditorState) {
     let mut x = 1;
     let mut y = 1;
 
-    let file = &state.file;
+    let file = state.active_file();
 
     for (line_number_maybe, line) in file.wrapped_lines(file_size) {
         if let Some(line_number) = line_number_maybe {
@@ -77,13 +82,16 @@ fn render_status(out: &mut Terminal, state: &EditorState) {
     let x = 1;
     let y = height;
     out.goto((x, y));
-    write!(out, "{}", state.file.debug(file_size)).unwrap();
+    write!(out, "{}", state.debug(file_size)).unwrap();
 }
 
 fn render_one_liner(out: &mut Terminal, state: &EditorState) {
     if let Some(ref ols) = state.one_liner {
         let (_, screen_height) = out.get_size();
-        let y = screen_height - 3;
+        let mut y = screen_height - 3;
+        if state.files.len() > 1 {
+            y -= 1;
+        }
 
         out.goto((1, y));
         out.set_color_fg(Color::Black);
@@ -95,6 +103,28 @@ fn render_one_liner(out: &mut Terminal, state: &EditorState) {
     }
 }
 
+fn render_tab_bar(out: &mut Terminal, state: &EditorState) {
+    if state.files.len() > 1 {
+        let (_, screen_height) = out.get_size();
+        let mut x = 1;
+        let y = screen_height - 3;
+
+        for (i, f) in state.files.iter().enumerate() {
+            out.goto((x, y));
+            out.set_color_fg(Color::Black);
+            if i == state.active_file {
+                out.set_color_bg(Color::White);
+            } else {
+                out.set_color_bg(Color::Grey);
+            }
+            write!(out, "{}", f.name).unwrap();
+            x += f.name.len() as i32 + 1;
+        }
+        out.set_color_fg(Color::Reset);
+        out.set_color_bg(Color::Reset);
+    }
+}
+
 fn main() {
     let mut term = Terminal::default();
     term.clear();
@@ -103,8 +133,9 @@ fn main() {
     let filename = args.get(1).cloned().unwrap_or(String::from("README.md"));
     let mut state = EditorState {
         keys: KeybindTable::default(),
-        file: File::open(&filename),
+        files: vec![File::open(&filename)],
         one_liner: None,
+        active_file: 0,
     };
     render_footer(&mut term, &state);
     render_file(&mut term, &state);
@@ -124,7 +155,15 @@ fn main() {
             Event::Key(Key::Null) => (),
             Event::Key(Key::Insert) => (),
             Event::Key(Key::F(_)) => (),
-            Event::Key(Key::Esc) => (),
+            Event::Key(Key::Esc) => {
+                state.one_liner = None;
+                screen_dirty = true;
+            },
+            Event::Key(Key::Ctrl('\t')) => {
+                state.active_file += 1;
+                state.active_file %= state.files.len();
+                screen_dirty = true;
+            }
             Event::Key(k @ Key::Ctrl(_)) | Event::Key(k @ Key::Alt(_)) => {
                 match state.keys.lookup(k) {
                     Some(Command::Quit) => break,
@@ -132,11 +171,29 @@ fn main() {
                         state.refresh(file_size);
                         screen_dirty = true;
                     },
+                    Some(Command::NewTab) => {
+                        state.files.push(File::empty());
+                        state.active_file += 1;
+                        screen_dirty = true;
+                    },
                     Some(Command::SaveFile) => {
                         let mut ols = OneLinerState::from(Command::SaveFile);
-                        ols.file.lines[0] = state.file.name.clone();
+                        ols.file.lines[0] = state.active_file().name.clone();
                         ols.file.move_cursor_end(file_size);
                         state.one_liner = Some(ols);
+                        screen_dirty = true;
+                    },
+                    Some(Command::OpenFile) => {
+                        let ols = OneLinerState::from(Command::OpenFile);
+                        state.one_liner = Some(ols);
+                        screen_dirty = true;
+                    },
+                    Some(Command::CloseFile) => {
+                        state.files.remove(state.active_file);
+                        if state.files.len() == 0 {
+                            break;
+                        }
+                        state.active_file %= state.files.len();
                         screen_dirty = true;
                     },
                     None => (),
@@ -179,23 +236,20 @@ fn main() {
                 file_dirty = true;
             },
             Event::Key(Key::Char('\n')) => {
-                let mut reset_one_liner = false;
-                if let Some(ref ols) = state.one_liner {
-                    match ols.command {
+                if let Some((command, value)) = state.consume_one_liner() {
+                    match command {
                         Command::SaveFile => {
-                            state.save_file(ols.value());
-                            reset_one_liner = true;
+                            state.save_file(&value);
+                        },
+                        Command::OpenFile => {
+                            state.open_file(&value);
                         },
                         _ => ()
-                    }
+                    };
                 } else {
                     state.insert_newline(file_size);
-                    screen_dirty = true;
                 }
-                if reset_one_liner {
-                    state.one_liner = None;
-                    screen_dirty = true;
-                }
+                screen_dirty = true;
             },
             Event::Key(Key::Delete) => {
                 state.delete(file_size);
@@ -229,6 +283,7 @@ fn main() {
         if screen_dirty {
             term.clear();
             render_footer(&mut term, &state);
+            render_tab_bar(&mut term, &state);
             screen_dirty = false;
         }
         if file_dirty {

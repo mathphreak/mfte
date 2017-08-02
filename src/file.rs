@@ -1,7 +1,6 @@
 use std::fs;
 use std::io;
 use std::io::prelude::*;
-use std::path::Path;
 use std::cmp;
 use std::fmt;
 
@@ -132,7 +131,7 @@ impl File {
 
     pub fn empty() -> File {
         File {
-            name: String::from(""),
+            name: String::from("<empty>"),
             lines: vec![String::from("")],
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
@@ -152,7 +151,7 @@ impl File {
         }
 
         File {
-            name: String::from(Path::new(path).file_name().unwrap().to_string_lossy()),
+            name: String::from(path),
             lines: lines,
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },

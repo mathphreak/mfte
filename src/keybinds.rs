@@ -13,6 +13,7 @@ const DEFAULT_KEYBINDS: &'static str = r#"^Q: Quit
 ^Z: Undo
 ^Y: Redo
 ^R: Refresh
+^T: NewTab
 "#;
 
 macro_attr! {
@@ -30,6 +31,7 @@ macro_attr! {
         Undo,
         Redo,
         Refresh,
+        NewTab,
     }
 }
 

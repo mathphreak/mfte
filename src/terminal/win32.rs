@@ -46,7 +46,7 @@ fn get_key(e: wincon::KEY_EVENT_RECORD) -> Option<Key> {
     };
     match e.wVirtualKeyCode as i32 {
         winapi::VK_BACK => return Some(Key::Backspace),
-        winapi::VK_TAB => return Some(Key::Char('\t')),
+        winapi::VK_TAB => return Some(char_mod('\t')),
         winapi::VK_RETURN => return Some(Key::Char('\n')),
         winapi::VK_ESCAPE => return Some(Key::Esc),
         winapi::VK_PRIOR => return Some(Key::PageUp),
