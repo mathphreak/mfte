@@ -13,9 +13,24 @@ use file::*;
 mod terminal;
 use terminal::*;
 
-fn render_file(out: &mut Terminal, file_size: (i32, i32), file: &File) {
+mod state;
+use state::*;
+
+fn get_file_size(term: &Terminal, state: &EditorState) -> (i32, i32) {
+    let (screen_w, screen_h) = term.get_size();
+    let one_liner_offset = match state.one_liner_active() {
+        true => 1,
+        false => 0
+    };
+    (screen_w - state.lineno_chars() - 1, screen_h - one_liner_offset - 3)
+}
+
+fn render_file(out: &mut Terminal, state: &EditorState) {
+    let file_size = get_file_size(out, state);
     let mut x = 1;
     let mut y = 1;
+
+    let file = &state.file;
 
     for (line_number_maybe, line) in file.wrapped_lines(file_size) {
         if let Some(line_number) = line_number_maybe {
@@ -33,12 +48,12 @@ fn render_file(out: &mut Terminal, file_size: (i32, i32), file: &File) {
     }
 }
 
-fn render_footer(out: &mut Terminal, keys: &KeybindTable) {
+fn render_footer(out: &mut Terminal, state: &EditorState) {
     let (screen_width, screen_height) = out.get_size();
 
     let mut x = 1;
     let mut y = screen_height - 1;
-    for (key, action) in keys.entries() {
+    for (key, action) in state.keys.entries() {
         out.goto((x, y));
         out.set_color_fg(Color::Black);
         out.set_color_bg(Color::White);
@@ -54,39 +69,53 @@ fn render_footer(out: &mut Terminal, keys: &KeybindTable) {
     }
 }
 
-fn render_status(out: &mut Terminal, file_size: (i32, i32), file: &File) {
+fn render_status(out: &mut Terminal, state: &EditorState) {
     let (_, height) = out.get_size();
+    let file_size = get_file_size(out, state);
     let x = 1;
     let y = height;
     out.goto((x, y));
-    write!(out, "{}", file.debug(file_size)).unwrap();
+    write!(out, "{}", state.file.debug(file_size)).unwrap();
 }
 
-fn get_file_size(term: &Terminal, file: &File) -> (i32, i32) {
-    let (screen_w, screen_h) = term.get_size();
-    (screen_w - file.lineno_chars() - 1, screen_h - 3)
+fn render_one_liner(out: &mut Terminal, state: &EditorState) {
+    if let Some(ref ols) = state.one_liner {
+        let (_, screen_height) = out.get_size();
+        let y = screen_height - 3;
+
+        out.goto((1, y));
+        out.set_color_fg(Color::Black);
+        out.set_color_bg(Color::White);
+        write!(out, "{} ", ols.label).unwrap();
+        out.set_color_fg(Color::Reset);
+        out.set_color_bg(Color::Reset);
+        write!(out, "{}", ols.value()).unwrap();
+    }
 }
 
 fn main() {
-    let keys = KeybindTable::default();
     let mut term = Terminal::default();
     term.clear();
     term.flush().unwrap();
-    render_footer(&mut term, &keys);
     let args: Vec<String> = env::args().collect();
     let filename = args.get(1).cloned().unwrap_or(String::from("README.md"));
-    let mut file = File::open(&filename);
-    let file_size = get_file_size(&term, &file);
-    render_file(&mut term, file_size, &file);
-    render_status(&mut term, file_size, &file);
-    term.goto((file.cursor(file_size).x + file.lineno_chars() + 1, file.cursor(file_size).y));
+    let mut state = EditorState {
+        keys: KeybindTable::default(),
+        file: File::open(&filename),
+        one_liner: None,
+    };
+    render_footer(&mut term, &state);
+    render_file(&mut term, &state);
+    render_status(&mut term, &state);
+    let file_size = get_file_size(&term, &state);
+    term.goto(state.cursor(file_size));
     term.flush().unwrap();
-    let mut file_lines = file.lines.len();
-    let mut file_wrapped_lines = file.wrapped_lines(file_size).len();
+    let mut file_lines = state.lines_len();
+    let mut file_wrapped_lines = state.wrapped_lines(file_size).len();
     let mut file_dirty = false;
     let mut screen_dirty = false;
     for evt in term.keys() {
-        let file_size = get_file_size(&term, &file);
+        let file_size = get_file_size(&term, &state);
         match evt {
             Event::Mouse(_) => (),
             Event::Unsupported(_) => (),
@@ -95,10 +124,16 @@ fn main() {
             Event::Key(Key::F(_)) => (),
             Event::Key(Key::Esc) => (),
             Event::Key(k @ Key::Ctrl(_)) | Event::Key(k @ Key::Alt(_)) => {
-                match keys.lookup(k) {
+                match state.keys.lookup(k) {
                     Some(Command::Quit) => break,
                     Some(Command::Refresh) => {
-                        file.refresh(file_size);
+                        state.refresh(file_size);
+                        screen_dirty = true;
+                    },
+                    Some(Command::SaveFile) => {
+                        let mut ols = OneLinerState::from(Command::SaveFile);
+                        ols.file.lines[0] = state.file.name.clone();
+                        state.one_liner = Some(ols);
                         screen_dirty = true;
                     },
                     None => (),
@@ -106,56 +141,72 @@ fn main() {
                 }
             },
             Event::Key(Key::Left) => {
-                screen_dirty = file.move_cursor_left(file_size);
+                screen_dirty = state.move_cursor_left(file_size);
             },
             Event::Key(Key::Right) => {
-                screen_dirty = file.move_cursor_right(file_size);
+                screen_dirty = state.move_cursor_right(file_size);
             },
             Event::Key(Key::Up) => {
-                screen_dirty = file.move_cursor_up(file_size);
+                screen_dirty = state.move_cursor_up(file_size);
             },
             Event::Key(Key::Down) => {
-                screen_dirty = file.move_cursor_down(file_size);
+                screen_dirty = state.move_cursor_down(file_size);
             },
-            Event::Key(Key::Home) => file.move_cursor_home(file_size),
-            Event::Key(Key::End) => file.move_cursor_end(file_size),
+            Event::Key(Key::Home) => state.move_cursor_home(file_size),
+            Event::Key(Key::End) => state.move_cursor_end(file_size),
             Event::Key(Key::PageUp) => {
-                file.page_up(file_size);
+                state.page_up(file_size);
                 screen_dirty = true;
             },
             Event::Key(Key::PageDown) => {
-                file.page_down(file_size);
+                state.page_down(file_size);
                 screen_dirty = true;
             },
             Event::Key(Key::Char('\t')) => {
                 for _ in 0..4 {
-                    file.insert(file_size, ' ');
+                    state.insert(file_size, ' ');
                 }
                 file_dirty = true;
             },
             Event::Key(Key::Char('\n')) => {
-                file.insert_newline(file_size);
-                screen_dirty = true;
+                let mut reset_one_liner = false;
+                if let Some(ref ols) = state.one_liner {
+                    match ols.command {
+                        Command::SaveFile => {
+                            state.save_file(ols.value());
+                            reset_one_liner = true;
+                        },
+                        _ => ()
+                    }
+                } else {
+                    state.insert_newline(file_size);
+                    screen_dirty = true;
+                }
+                if reset_one_liner {
+                    state.one_liner = None;
+                    screen_dirty = true;
+                }
             },
             Event::Key(Key::Delete) => {
-                file.delete(file_size);
+                state.delete(file_size);
                 screen_dirty = true;
             },
             Event::Key(Key::Backspace) => {
-                file.backspace(file_size);
+                state.backspace(file_size);
                 screen_dirty = true;
             },
             Event::Key(Key::Char(c)) => {
-                file.insert(file_size, c);
+                state.insert(file_size, c);
                 file_dirty = true;
             },
         }
+        let file_size = get_file_size(&term, &state);
         if screen_dirty {
             file_dirty = true;
         }
         if file_dirty {
-            let new_file_lines = file.lines.len();
-            let new_file_wrapped_lines = file.wrapped_lines(file_size).len();
+            let new_file_lines = state.lines_len();
+            let new_file_wrapped_lines = state.wrapped_lines(file_size).len();
             if new_file_lines != file_lines {
                 screen_dirty = true;
                 file_lines = new_file_lines;
@@ -167,15 +218,16 @@ fn main() {
         }
         if screen_dirty {
             term.clear();
-            render_footer(&mut term, &keys);
+            render_footer(&mut term, &state);
             screen_dirty = false;
         }
         if file_dirty {
-            render_file(&mut term, file_size, &file);
+            render_file(&mut term, &state);
+            render_one_liner(&mut term, &state);
             file_dirty = false;
         }
-        render_status(&mut term, file_size, &file);
-        term.goto((file.cursor(file_size).x + file.lineno_chars() + 1, file.cursor(file_size).y));
+        render_status(&mut term, &state);
+        term.goto(state.cursor(file_size));
         term.flush().unwrap();
     }
 }

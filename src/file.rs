@@ -114,6 +114,17 @@ impl File {
         )
     }
 
+    pub fn empty() -> File {
+        File {
+            name: String::from(""),
+            lines: vec![String::from("")],
+            caret: Cursor { x: 1, y: 1, y_offset: 0 },
+            window_top: Cursor { x: 1, y: 1, y_offset: 0 },
+            last_dim: (0, 0),
+            misc: String::from(""),
+        }
+    }
+
     pub fn open(path: &str) -> File {
         let f = fs::File::open(path).expect("Could not open file");
         let f = io::BufReader::new(f);
@@ -125,6 +136,19 @@ impl File {
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
             misc: String::from(""),
+        }
+    }
+
+    pub fn save(&self, path: &str) {
+        let f = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(path)
+            .expect("Could not open file");
+        let mut f = io::BufWriter::new(f);
+
+        for line in self.lines.iter() {
+            write!(f, "{}\n", line).unwrap();
         }
     }
 
