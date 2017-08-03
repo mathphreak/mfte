@@ -9,7 +9,9 @@ rust:
 before_script: rvm get stable
 jobs:
   include:
-  - stage: deploy
+  - &deploy
+    stage: deploy
+    os: linux
     rust: stable
     script:
     - cargo build --release
@@ -25,3 +27,5 @@ jobs:
       on:
         repo: mathphreak/mfte
         tags: true
+  - <<: *deploy
+    os: osx
