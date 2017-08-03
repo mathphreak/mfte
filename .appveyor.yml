@@ -40,9 +40,11 @@ environment:
   # Stable 64-bit MSVC
     - channel: stable
       target: x86_64-pc-windows-msvc
+      arch: x64
   # Stable 32-bit MSVC
     - channel: stable
       target: i686-pc-windows-msvc
+      arch: x86
   # Beta 64-bit MSVC
     - channel: beta
       target: x86_64-pc-windows-msvc
@@ -92,6 +94,8 @@ install:
 # build: false
 build_script:
   - cargo build --release
+  - mkdir dist
+  - mv target\release\mfte.exe dist\mfte-%arch%.exe
 
 # Uses 'cargo test' to run tests and build. Alternatively, the project may call compiled programs
 #directly or perform other testing commands. Rust will automatically be placed in the PATH
@@ -100,7 +104,7 @@ test_script:
   - cargo test --verbose %cargoflags%
 
 artifacts:
-  - path: target\release\mfte.exe
+  - path: dist\*
 
 ## GitHub Releases Deployment ##
 deploy:
@@ -108,7 +112,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: CyVbWhf9A9aWuXsJALK7rDaL8N23uVRoU0X/YxYsHBK++/kY21YDEPvFTE197vCf
-  artifact: target\release\mfte.exe
+  artifact: dist\*
   on:
     appveyor_repo_tag: true
     channel: stable
