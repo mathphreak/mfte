@@ -129,17 +129,24 @@ fn main() {
     let mut term = Terminal::default();
     term.clear();
     term.flush().unwrap();
-    let args: Vec<String> = env::args().collect();
-    let filename = args.get(1).cloned().unwrap_or(String::from("README.md"));
     let mut state = EditorState {
         keys: KeybindTable::default(),
-        files: vec![File::open(&filename)],
-        one_liners: vec![None],
+        files: vec![],
+        one_liners: vec![],
         active_file: 0,
     };
+    for filename in env::args().skip(1) {
+        state.files.push(File::open(&filename));
+        state.one_liners.push(None);
+    }
+    if state.files.len() == 0 {
+        state.files.push(File::empty());
+        state.one_liners.push(None);
+    }
     render_footer(&mut term, &state);
     render_file(&mut term, &state);
     render_status(&mut term, &state);
+    render_tab_bar(&mut term, &state);
     let file_size = get_file_size(&term, &state);
     term.goto(state.cursor(file_size));
     term.flush().unwrap();
