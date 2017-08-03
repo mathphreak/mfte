@@ -196,6 +196,19 @@ impl EditorState {
     split_func!(move_cursor_end);
     restrict_func!(page_up);
     restrict_func!(page_down);
+    
+    pub fn move_cursor_to(&mut self, dim: (i32, i32), dest: (i32, i32)) {
+        while self.cursor(dim).1 < dest.1 {
+            self.move_cursor_down(dim);
+        }
+        while self.cursor(dim).1 > dest.1 {
+            self.move_cursor_up(dim);
+        }
+        self.move_cursor_end(dim);
+        while dest.0 < self.cursor(dim).0 {
+            self.move_cursor_left(dim);
+        }
+    }
 
     pub fn insert_newline(&mut self, dim: (i32, i32)) {
         match self.one_liner() {

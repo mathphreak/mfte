@@ -157,6 +157,26 @@ fn main() {
     for evt in term.keys() {
         let file_size = get_file_size(&term, &state);
         match evt {
+            Event::Mouse(MouseEvent::Press(MouseButton::Left, x, y)) => {
+                let left_gutter = state.lineno_chars() + 1;
+                let bottom_gutter = file_size.1 + 1;
+                if x > left_gutter && y < bottom_gutter {
+                    state.move_cursor_to(file_size, (x, y));
+                } else if y < bottom_gutter {
+                    let x = state.cursor(file_size).0;
+                    state.move_cursor_to(file_size, (x, y));
+                } else if y == bottom_gutter && state.files.len() > 1 && !state.one_liner_active() {
+                    let mut tab_x = 1;
+                    for (i, f) in state.files.iter().enumerate() {
+                        tab_x += f.name.len() as i32 + 1;
+                        if x < tab_x {
+                            state.active_file = i;
+                            break;
+                        }
+                    }
+                    screen_dirty = true;
+                }
+            },
             Event::Mouse(_) => (),
             Event::Unsupported(_) => (),
             Event::Key(Key::Null) => (),

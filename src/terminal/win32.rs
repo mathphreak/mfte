@@ -80,7 +80,7 @@ fn get_mouse_event(e: wincon::MOUSE_EVENT_RECORD) -> Option<MouseEvent> {
     let button = match e.dwEventFlags {
         0 => Some(match e.dwButtonState {
             0 => {
-                return Some(MouseEvent::Release(pos.X as i32, pos.Y as i32));
+                return Some(MouseEvent::Release(pos.X as i32 + 1, pos.Y as i32 + 1));
             },
             wincon::FROM_LEFT_1ST_BUTTON_PRESSED => MouseButton::Left,
             wincon::RIGHTMOST_BUTTON_PRESSED => MouseButton::Right,
@@ -95,12 +95,12 @@ fn get_mouse_event(e: wincon::MOUSE_EVENT_RECORD) -> Option<MouseEvent> {
             }
         }),
         wincon::MOUSE_MOVED => {
-            return Some(MouseEvent::Hold(pos.X as i32, pos.Y as i32));
+            return Some(MouseEvent::Hold(pos.X as i32 + 1, pos.Y as i32 + 1));
         },
         _ => None
     };
     if let Some(b) = button {
-        Some(MouseEvent::Press(b, pos.X as i32, pos.Y as i32))
+        Some(MouseEvent::Press(b, pos.X as i32 + 1, pos.Y as i32 + 1))
     } else {
         None
     }
