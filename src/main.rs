@@ -201,7 +201,14 @@ fn main() {
                         screen_dirty = true;
                     },
                     None => (),
-                    _ => ()
+                    Some(c) => {
+                        let mut ols = OneLinerState::from(c);
+                        ols.label = "Nope.";
+                        ols.file.lines[0] = String::from("That doesn't work yet. Press Esc to move on");
+                        ols.file.move_cursor_end(file_size);
+                        state.set_one_liner(ols);
+                        screen_dirty = true;
+                    }
                 }
             },
             Event::Key(Key::Left) => {
