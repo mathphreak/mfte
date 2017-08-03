@@ -11,11 +11,10 @@ jobs:
   include:
   - stage: deploy
     rust: stable
-    os: linux
     script:
     - cargo build --release
     - mkdir dist
-    - mv target/release/mfte dist/mfte-$(uname)
+    - mv target/release/mfte dist/mfte-$TRAVIS_OS_NAME
     deploy:
       provider: releases
       skip_cleanup: true
@@ -25,3 +24,4 @@ jobs:
       file: dist/*
       on:
         repo: mathphreak/mfte
+        tags: true
