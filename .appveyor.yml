@@ -104,7 +104,8 @@ test_script:
   - cargo test --verbose %cargoflags%
 
 artifacts:
-  - path: dist\*
+  - path: dist\*.exe
+    name: distributable
 
 ## GitHub Releases Deployment ##
 deploy:
@@ -112,7 +113,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: CyVbWhf9A9aWuXsJALK7rDaL8N23uVRoU0X/YxYsHBK++/kY21YDEPvFTE197vCf
-  artifact: dist\*
+  artifact: distributable
   on:
     appveyor_repo_tag: true
     channel: stable
