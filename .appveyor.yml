@@ -99,6 +99,9 @@ build_script:
 test_script:
   - cargo test --verbose %cargoflags%
 
+artifacts:
+  - path: target\release\mfte.exe
+
 ## GitHub Releases Deployment ##
 deploy:
   description: 'mfte'
