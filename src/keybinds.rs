@@ -109,23 +109,28 @@ impl<'a> From<&'a str> for KeybindTable {
 #[cfg(test)]
 mod tests {
     use super::*;
+    
+    fn ctrl(c: char) -> Key {
+        Key::Ctrl(Box::new(Key::Char(c)))
+    }
+    
     #[test]
     fn keybind_parsing_works() {
         let keys = KeybindTable::from("^Q: Quit");
-        match keys.lookup(Key::Ctrl('q')) {
+        match keys.lookup(ctrl('q')) {
             Some(Command::Quit) => (),
             _ => panic!("Looking up ^Q failed!")
         }
-        match keys.lookup(Key::Ctrl('x')) {
+        match keys.lookup(ctrl('x')) {
             None => (),
             _ => panic!("Looking up ^X succeeded!")
         }
         let keys = KeybindTable::from("^X: Quit");
-        match keys.lookup(Key::Ctrl('x')) {
+        match keys.lookup(ctrl('x')) {
             Some(Command::Quit) => (),
             _ => panic!("Looking up ^X failed!")
         }
-        match keys.lookup(Key::Ctrl('q')) {
+        match keys.lookup(ctrl('q')) {
             None => (),
             _ => panic!("Looking up ^Q succeeded!")
         }
