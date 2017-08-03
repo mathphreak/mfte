@@ -26,49 +26,52 @@ fn get_key(e: wincon::KEY_EVENT_RECORD) -> Option<Key> {
     if e.bKeyDown == 0 {
         return None;
     }
-    let char_mod = {
+    let key_mod = |mut key| {
         let alt_flags = wincon::LEFT_ALT_PRESSED | wincon::RIGHT_ALT_PRESSED;
         let ctrl_flags = wincon::LEFT_CTRL_PRESSED | wincon::RIGHT_CTRL_PRESSED;
-        if e.dwControlKeyState & ctrl_flags != 0 {
-            Key::Ctrl
-        } else if e.dwControlKeyState & alt_flags != 0 {
-            Key::Alt
-        } else {
-            Key::Char
+        if e.dwControlKeyState & wincon::SHIFT_PRESSED != 0 {
+            key = Key::Shift(Box::new(key));
         }
+        if e.dwControlKeyState & alt_flags != 0 {
+            key = Key::Alt(Box::new(key));
+        }
+        if e.dwControlKeyState & ctrl_flags != 0 {
+            key = Key::Ctrl(Box::new(key));
+        }
+        Some(key)
     };
     let char_mod = |c: char| {
         if e.dwControlKeyState & wincon::SHIFT_PRESSED == 0 {
-            char_mod(c.to_lowercase().next().unwrap())
+            Key::Char(c.to_lowercase().next().unwrap())
         } else {
-            char_mod(c.to_uppercase().next().unwrap())
+            Key::Char(c.to_uppercase().next().unwrap())
         }
     };
     match e.wVirtualKeyCode as i32 {
-        winapi::VK_BACK => return Some(Key::Backspace),
-        winapi::VK_TAB => return Some(char_mod('\t')),
-        winapi::VK_RETURN => return Some(Key::Char('\n')),
-        winapi::VK_ESCAPE => return Some(Key::Esc),
-        winapi::VK_PRIOR => return Some(Key::PageUp),
-        winapi::VK_NEXT => return Some(Key::PageDown),
-        winapi::VK_END => return Some(Key::End),
-        winapi::VK_HOME => return Some(Key::Home),
-        winapi::VK_LEFT => return Some(Key::Left),
-        winapi::VK_UP => return Some(Key::Up),
-        winapi::VK_RIGHT => return Some(Key::Right),
-        winapi::VK_DOWN => return Some(Key::Down),
-        winapi::VK_INSERT => return Some(Key::Insert),
-        winapi::VK_DELETE => return Some(Key::Delete),
-        0x41...0x5A => return Some(char_mod(e.wVirtualKeyCode as u8 as char)),
+        winapi::VK_BACK => return key_mod(Key::Backspace),
+        winapi::VK_TAB => return key_mod(char_mod('\t')),
+        winapi::VK_RETURN => return key_mod(Key::Char('\n')),
+        winapi::VK_ESCAPE => return key_mod(Key::Esc),
+        winapi::VK_PRIOR => return key_mod(Key::PageUp),
+        winapi::VK_NEXT => return key_mod(Key::PageDown),
+        winapi::VK_END => return key_mod(Key::End),
+        winapi::VK_HOME => return key_mod(Key::Home),
+        winapi::VK_LEFT => return key_mod(Key::Left),
+        winapi::VK_UP => return key_mod(Key::Up),
+        winapi::VK_RIGHT => return key_mod(Key::Right),
+        winapi::VK_DOWN => return key_mod(Key::Down),
+        winapi::VK_INSERT => return key_mod(Key::Insert),
+        winapi::VK_DELETE => return key_mod(Key::Delete),
+        0x41...0x5A => return key_mod(char_mod(e.wVirtualKeyCode as u8 as char)),
         winapi::VK_F1...winapi::VK_F24 => {
-            return Some(Key::F((e.wVirtualKeyCode as i32 - winapi::VK_F1 + 1) as u8))
+            return key_mod(Key::F((e.wVirtualKeyCode as i32 - winapi::VK_F1 + 1) as u8))
         },
         _ => (),
     };
     if e.UnicodeChar == 0 {
         Some(Key::Null)
     } else {
-        Some(char_mod(e.UnicodeChar as u8 as char))
+        key_mod(char_mod(e.UnicodeChar as u8 as char))
     }
 }
 

@@ -16,7 +16,8 @@ pub enum Event {
     Unsupported(Vec<u32>),
 }
 
-// Still stolen from termios
+// Derived from termios, with modifications
+// Precedence **must** be Ctrl(Alt(Shift())) in that order
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub enum Key {
     Backspace,
@@ -32,10 +33,20 @@ pub enum Key {
     Insert,
     F(u8),
     Char(char),
-    Alt(char),
-    Ctrl(char),
+    Shift(Box<Key>),
+    Alt(Box<Key>),
+    Ctrl(Box<Key>),
     Null,
     Esc,
+}
+
+impl Key {
+    pub fn is_char(&self) -> bool {
+        match self {
+            &Key::Char(_) => true,
+            _ => false
+        }
+    }
 }
 
 // Also termios

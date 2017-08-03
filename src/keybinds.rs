@@ -47,7 +47,10 @@ impl KeybindTable {
     pub fn entries(&self) -> Vec<(String, String)> {
         self.table.iter().map(|(key, command)| {
             let key = match key {
-                &Key::Ctrl(k) => format!("^{}", k).to_uppercase(),
+                &Key::Ctrl(ref k) => match **k {
+                    Key::Char(ref k) => format!("^{}", *k).to_uppercase(),
+                    _ => String::from("???")
+                },
                 _ => String::from("???")
             };
             (key, format!("{}", command))
@@ -73,7 +76,7 @@ fn decode_key_spec(spec: &str) -> Option<Key> {
         println!("Bad key specifier: {}", spec);
         return None;
     }
-    Some(Key::Ctrl(key))
+    Some(Key::Ctrl(Box::new(Key::Char(key))))
 }
 
 impl<'a> From<&'a str> for KeybindTable {

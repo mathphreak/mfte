@@ -166,7 +166,7 @@ fn main() {
                 state.one_liner_mut().take();
                 screen_dirty = true;
             },
-            Event::Key(Key::Ctrl('\t')) => {
+            Event::Key(Key::Ctrl(ref k)) if **k == Key::Char('\t') => {
                 state.next_tab();
                 screen_dirty = true;
             }
@@ -272,10 +272,20 @@ fn main() {
                 state.backspace(file_size);
                 screen_dirty = true;
             },
+            Event::Key(Key::Shift(ref k)) if k.is_char() => {
+                match **k {
+                    Key::Char(c) => {
+                        state.insert(file_size, c);
+                        file_dirty = true;
+                    },
+                    _ => panic!("This was just the right thing!")
+                }
+            },
             Event::Key(Key::Char(c)) => {
                 state.insert(file_size, c);
                 file_dirty = true;
             },
+            Event::Key(Key::Shift(_)) => ()
         }
         let file_size = get_file_size(&term, &state);
         if screen_dirty {
