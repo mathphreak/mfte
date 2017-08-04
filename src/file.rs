@@ -152,6 +152,7 @@ pub struct File {
     pub lines: Vec<String>,
     caret: Cursor,
     selection_start: Option<Cursor>,
+    selecting: bool,
     window_top: Cursor,
     last_dim: (i32, i32),
     tab_width: u8,
@@ -176,6 +177,7 @@ impl File {
             lines: vec![String::from("")],
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
             selection_start: None,
+            selecting: false,
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
             tab_width: 4,
@@ -197,6 +199,7 @@ impl File {
             lines: lines,
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
             selection_start: None,
+            selecting: false,
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
             tab_width: 4,
@@ -323,16 +326,27 @@ impl File {
     }
     
     pub fn select(&mut self) {
+        self.selecting = true;
         if self.selection_start.is_none() {
             self.selection_start = Some(self.caret.clone());
         }
     }
     
     pub fn deselect(&mut self) {
+        self.selecting = false;
         self.selection_start = None;
+    }
+    
+    fn tweak_selection(&mut self) {
+        if self.selecting {
+            self.selecting = false;
+        } else {
+            self.deselect();
+        }
     }
 
     pub fn move_cursor_left(&mut self, dim: (i32, i32)) -> bool {
+        self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_left(dim, &self.lines);
         if self.cursor(dim).y < 1 {
@@ -344,6 +358,7 @@ impl File {
     }
 
     pub fn move_cursor_right(&mut self, dim: (i32, i32)) -> bool {
+        self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_right(dim, &self.lines);
         if self.cursor(dim).y > dim.1 {
@@ -355,6 +370,7 @@ impl File {
     }
 
     pub fn move_cursor_up(&mut self, dim: (i32, i32)) -> bool {
+        self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_up(dim, &self.lines);
         if self.cursor(dim).y < 1 {
@@ -366,6 +382,7 @@ impl File {
     }
 
     pub fn move_cursor_down(&mut self, dim: (i32, i32)) -> bool {
+        self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_down(dim, &self.lines);
         if self.cursor(dim).y > dim.1 {
@@ -377,22 +394,26 @@ impl File {
     }
 
     pub fn move_cursor_home(&mut self, dim: (i32, i32)) {
+        self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_home(dim, &self.lines);
     }
 
     pub fn move_cursor_end(&mut self, dim: (i32, i32)) {
+        self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_end(dim, &self.lines);
     }
 
     pub fn page_up(&mut self, dim: (i32, i32)) {
+        self.tweak_selection();
         for _ in 0..dim.1 {
             self.move_cursor_up(dim);
         }
     }
 
     pub fn page_down(&mut self, dim: (i32, i32)) {
+        self.tweak_selection();
         for _ in 0..dim.1 {
             self.move_cursor_down(dim);
         }
