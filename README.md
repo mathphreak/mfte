@@ -9,7 +9,7 @@ Vim and Emacs are too complicated. Nano does almost everything I want. (I don't 
 
 It's pronounced "mifty" (rhymes with "nifty").
 
-Also works on Windows. Apparently nobody has written a cross-platform TUI library for Rust yet. I should probably get on that.
+Works best on Windows because that's what I use. Guaranteed to compile on Mac OS and Linux; full functionality might not happen.
 
 RULES:
 - Don't do magic. Automatically indenting your entire file for you is really cool, but remembering how to do that takes up space in your brain that would be better spent on other things, like how to indent your code.
@@ -25,3 +25,14 @@ RULES:
 
 Powerful text editors tend to overcomplicate indentation. Nano doesn't do anything particularly clever at all. The rule is simple: assume the indentation level hasn't changed from the previous line and make it easy to add or remove a level.
 Decorated block comments, Markdown lists, and other line prefixes that aren't purely whitespace count too.
+
+## OS compatibility
+
+Windows has actual APIs for getting one keypress at a time and getting all modifier keys, so MFTE can receive (say) Ctrl+Tab or Shift+Down.
+If I wanted Ctrl+Shift+S to be different from Ctrl+S, that would work too.
+
+On UNIX, meanwhile, everything is garbage.
+Tab is just Ctrl+I, so Ctrl+Tab is not even possible.
+Down is Esc [ B, so Shift+Down also makes no sense.
+I have no idea how to resolve this without writing my own terminal emulator just for MFTE.
+Apparently you can shenanigans xterm into reinterpreting things as other things, so that might work.
