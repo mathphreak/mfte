@@ -185,6 +185,12 @@ fn main() {
                     screen_dirty = true;
                 }
             },
+            Event::Mouse(MouseEvent::Press(MouseButton::WheelUp, _, _)) => {
+                state.scroll_up(file_size);
+            },
+            Event::Mouse(MouseEvent::Press(MouseButton::WheelDown, _, _)) => {
+                state.scroll_down(file_size);
+            },
             Event::Mouse(_) => (),
             Event::Unsupported(_) => (),
             Event::Key(Key::Null) => (),

@@ -461,6 +461,20 @@ impl File {
         }
     }
     
+    pub fn scroll_up(&mut self, dim: (i32, i32)) {
+        for _ in 0..3 {
+            self.window_top.move_up(dim, &self.lines);
+        }
+        self.display_dirty = true;
+    }
+    
+    pub fn scroll_down(&mut self, dim: (i32, i32)) {
+        for _ in 0..3 {
+            self.window_top.move_down(dim, &self.lines);
+        }
+        self.display_dirty = true;
+    }
+    
     fn delete_selection(&mut self, dim: (i32, i32)) {
         if let Some(sel) = self.selection_start.take() {
             // This is not smart. Especially if the selection includes half of an indent level.

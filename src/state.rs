@@ -257,6 +257,8 @@ impl EditorState {
     split_func!(move_cursor_end);
     restrict_func!(page_up);
     restrict_func!(page_down);
+    restrict_func!(scroll_up);
+    restrict_func!(scroll_down);
     
     pub fn move_cursor_to(&mut self, dim: (i32, i32), dest: (i32, i32)) {
         while self.cursor(dim).1 < dest.1 {
