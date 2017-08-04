@@ -162,8 +162,8 @@ impl EditorState {
         self.active_file().debug(dim)
     }
 
-    pub fn wrapped_lines(&self, dim: (i32, i32)) -> Vec<(Option<u16>, String)> {
-        self.active_file().wrapped_lines(dim)
+    pub fn chunked_text(&self, dim: (i32, i32)) -> Vec<(Option<u16>, Vec<TextChunk>)> {
+        self.active_file().chunked_text(dim)
     }
 
     pub fn refresh(&mut self, dim: (i32, i32)) {

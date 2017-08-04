@@ -4,7 +4,14 @@ use std::io::prelude::*;
 use std::cmp;
 use std::fmt;
 
+use super::terminal::Color;
 use super::indent::Indented;
+
+pub struct TextChunk {
+    pub contents: String,
+    pub background: Color,
+    pub foreground: Color,
+}
 
 #[derive(Clone)]
 pub struct Cursor {
@@ -16,6 +23,33 @@ pub struct Cursor {
 impl fmt::Display for Cursor {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "({}, {}, o={})", self.x, self.y, self.y_offset)
+    }
+}
+
+impl PartialEq for Cursor {
+    fn eq(&self, other: &Cursor) -> bool {
+        self.y == other.y && self.x == other.x
+    }
+}
+
+impl Eq for Cursor {
+}
+
+impl PartialOrd for Cursor {
+    fn partial_cmp(&self, other: &Cursor) -> Option<cmp::Ordering> {
+        if self.y < other.y {
+            Some(cmp::Ordering::Less)
+        } else if self.y > other.y {
+            Some(cmp::Ordering::Greater)
+        } else {
+            self.x.partial_cmp(&other.x)
+        }
+    }
+}
+
+impl Ord for Cursor {
+    fn cmp(&self, other: &Cursor) -> cmp::Ordering {
+        self.partial_cmp(other).unwrap()
     }
 }
 
@@ -197,8 +231,55 @@ impl File {
     pub fn lineno_chars(&self) -> i32 {
         format!("{}", self.lines.len()).len() as i32
     }
+    
+    fn chunk(&self, line_number: usize, mut line: String, offset: usize) -> Vec<TextChunk> {
+        let mut result = vec![];
+        let mut last = None;
+        let mut fg = Color::Reset;
+        let mut bg = Color::Reset;
+        if let Some(ref sel) = self.selection_start {
+            let start = cmp::min(sel, &self.caret);
+            let end = cmp::max(sel, &self.caret);
+            let sx = start.x as usize - 1;
+            let ex = end.x as usize - 1;
+            let sy = start.y as usize - 1;
+            let ey = end.y as usize - 1;
+            if line_number >= sy && line_number <= ey {
+                if line_number == ey && offset + line.len() >= ex {
+                    last = Some(TextChunk {
+                        contents: line.split_off(ex - offset),
+                        foreground: Color::Reset,
+                        background: Color::Reset,
+                    });
+                } else {
+                    // Throw in a space at the end to indicate that the selection includes the newline
+                    line.push(' ');
+                }
+                if line_number == sy && offset < sx {
+                    let real_line = line.split_off(sx - offset);
+                    result.push(TextChunk {
+                        contents: line,
+                        foreground: Color::Reset,
+                        background: Color::Reset,
+                    });
+                    line = real_line;
+                }
+                fg = Color::Black;
+                bg = Color::White;
+            }
+        }
+        result.push(TextChunk {
+            contents: line,
+            foreground: fg,
+            background: bg,
+        });
+        if let Some(c) = last {
+            result.push(c);
+        }
+        result
+    }
 
-    pub fn wrapped_lines(&self, dim: (i32, i32)) -> Vec<(Option<u16>, String)> {
+    pub fn chunked_text(&self, dim: (i32, i32)) -> Vec<(Option<u16>, Vec<TextChunk>)> {
         let mut result = vec![];
         let width = dim.0 as usize;
         let top_y = self.window_top.y as usize - 1;
@@ -206,13 +287,15 @@ impl File {
         for (line_number, raw_line) in self.lines.iter().enumerate().skip(top_y) {
             let mut line_start = 0;
             let mut line_end = cmp::min(raw_line.len(), width);
-            result.push((Some(line_number as u16),
-                         String::from(&raw_line[line_start..line_end])));
+            let line = String::from(&raw_line[line_start..line_end]);
+            let chunks = self.chunk(line_number, line, line_start);
+            result.push((Some(line_number as u16), chunks));
             while line_end < raw_line.len() {
                 line_start = line_end;
                 line_end += cmp::min(raw_line.len() - line_end, width);
-                result.push((None,
-                             String::from(&raw_line[line_start..line_end])));
+                let line = String::from(&raw_line[line_start..line_end]);
+                let chunks = self.chunk(line_number, line, line_start);
+                result.push((None, chunks));
             }
             if result.len() as i32 >= dim.1 + top_extra {
                 break;

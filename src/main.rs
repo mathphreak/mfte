@@ -39,17 +39,22 @@ fn render_file(out: &mut Terminal, state: &EditorState) {
 
     let file = state.active_file();
 
-    for (line_number_maybe, line) in file.wrapped_lines(file_size) {
+    for (line_number_maybe, chunks) in file.chunked_text(file_size) {
         if let Some(line_number) = line_number_maybe {
             out.goto((x, y));
             out.set_color_fg(Color::Grey);
+            out.set_color_bg(Color::Reset);
             write!(out, "{:1$}",
                    line_number + 1, file.lineno_chars() as usize).unwrap();
             out.set_color_fg(Color::Reset);
         }
         x += file.lineno_chars() + 1;
         out.goto((x, y));
-        write!(out, "{}", line).unwrap();
+        for chunk in chunks {
+            out.set_color_bg(chunk.background);
+            out.set_color_fg(chunk.foreground);
+            write!(out, "{}", chunk.contents).unwrap();
+        }
         x = 1;
         y += 1;
     }
@@ -151,7 +156,7 @@ fn main() {
     term.goto(state.cursor(file_size));
     term.flush().unwrap();
     let mut file_lines = state.lines_len();
-    let mut file_wrapped_lines = state.wrapped_lines(file_size).len();
+    let mut file_wrapped_lines = state.chunked_text(file_size).len();
     let mut file_dirty = false;
     let mut screen_dirty = false;
     for mut evt in term.keys() {
@@ -159,6 +164,7 @@ fn main() {
         evt = match evt {
             Event::Key(Key::Shift(ref k)) if k.is_navigation() => {
                 state.select();
+                file_dirty = true;
                 Event::Key((**k).clone())
             },
             _ => evt
@@ -324,7 +330,7 @@ fn main() {
         }
         if file_dirty {
             let new_file_lines = state.lines_len();
-            let new_file_wrapped_lines = state.wrapped_lines(file_size).len();
+            let new_file_wrapped_lines = state.chunked_text(file_size).len();
             if new_file_lines != file_lines {
                 screen_dirty = true;
                 file_lines = new_file_lines;
