@@ -17,7 +17,6 @@ jobs:
     - mkdir dist
     - mv target/release/mfte dist/mfte-linux
     - cargo login $CARGO_TOKEN
-    - cargo publish
     deploy: &1
       provider: releases
       skip_cleanup: true
@@ -28,6 +27,7 @@ jobs:
       on:
         repo: mathphreak/mfte
         tags: true
+    after_deploy: cargo publish
   - stage: deploy
     os: osx
     rust: stable
