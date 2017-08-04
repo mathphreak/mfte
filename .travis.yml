@@ -12,12 +12,11 @@ jobs:
   - stage: deploy
     os: linux
     rust: stable
-    script:
+    script: &1
     - cargo build --release
     - mkdir dist
-    - mv target/release/mfte dist/mfte-linux
-    - cargo login $CARGO_TOKEN
-    deploy: &1
+    - mv target/release/mfte dist/mfte-$TRAVIS_OS_NAME
+    deploy: &2
       provider: releases
       skip_cleanup: true
       file_glob: true
@@ -27,13 +26,8 @@ jobs:
       on:
         repo: mathphreak/mfte
         tags: true
-    after_deploy: cargo publish
   - stage: deploy
     os: osx
     rust: stable
-    script:
-    - cargo build --release
-    - mkdir dist
-    - mv target/release/mfte dist/mfte-osx
-    deploy: *1
-
+    script: *1
+    deploy: *2
