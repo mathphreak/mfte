@@ -511,7 +511,7 @@ mod tests {
     use super::*;
     #[test]
     fn load_save_preserves_everything() {
-        let f = File::open("README.md");
+        let mut f = File::open("README.md");
         f.save("readme.bak");
         let orig = fs::File::open("README.md").unwrap();
         let new = fs::File::open("readme.bak").unwrap();
