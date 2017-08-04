@@ -9,15 +9,16 @@ rust:
 before_script: rvm get stable
 jobs:
   include:
-  - &deploy
-    stage: deploy
+  - stage: deploy
     os: linux
     rust: stable
     script:
     - cargo build --release
     - mkdir dist
-    - mv target/release/mfte dist/mfte-$TRAVIS_OS_NAME
-    deploy:
+    - mv target/release/mfte dist/mfte-linux
+    - cargo login $CARGO_TOKEN
+    - cargo publish
+    deploy: &1
       provider: releases
       skip_cleanup: true
       file_glob: true
@@ -27,5 +28,12 @@ jobs:
       on:
         repo: mathphreak/mfte
         tags: true
-  - <<: *deploy
+  - stage: deploy
     os: osx
+    rust: stable
+    script:
+    - cargo build --release
+    - mkdir dist
+    - mv target/release/mfte dist/mfte-osx
+    deploy: *1
+
