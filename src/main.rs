@@ -37,18 +37,16 @@ fn render_file(out: &mut Terminal, state: &EditorState) {
     let mut x = 1;
     let mut y = 1;
 
-    let file = state.active_file();
-
-    for (line_number_maybe, chunks) in file.chunked_text(file_size) {
+    for (line_number_maybe, chunks) in state.chunked_text(file_size) {
         if let Some(line_number) = line_number_maybe {
             out.goto((x, y));
             out.set_color_fg(Color::Grey);
             out.set_color_bg(Color::Reset);
             write!(out, "{:1$}",
-                   line_number + 1, file.lineno_chars() as usize).unwrap();
+                   line_number + 1, state.lineno_chars() as usize).unwrap();
             out.set_color_fg(Color::Reset);
         }
-        x += file.lineno_chars() + 1;
+        x += state.lineno_chars() + 1;
         out.goto((x, y));
         for chunk in chunks {
             out.set_color_bg(chunk.background);
@@ -115,6 +113,7 @@ fn render_tab_bar(out: &mut Terminal, state: &EditorState) {
         let y = screen_height - 3;
 
         for (i, f) in state.files.iter().enumerate() {
+            let l = f.label();
             out.goto((x, y));
             out.set_color_fg(Color::Black);
             if i == state.active_file {
@@ -122,8 +121,8 @@ fn render_tab_bar(out: &mut Terminal, state: &EditorState) {
             } else {
                 out.set_color_bg(Color::Grey);
             }
-            write!(out, "{}", f.name).unwrap();
-            x += f.name.len() as i32 + 1;
+            write!(out, "{}", l).unwrap();
+            x += l.len() as i32 + 1;
         }
         out.set_color_fg(Color::Reset);
         out.set_color_bg(Color::Reset);
@@ -155,16 +154,12 @@ fn main() {
     let file_size = get_file_size(&term, &state);
     term.goto(state.cursor(file_size));
     term.flush().unwrap();
-    let mut file_lines = state.lines_len();
-    let mut file_wrapped_lines = state.chunked_text(file_size).len();
-    let mut file_dirty = false;
     let mut screen_dirty = false;
     for mut evt in term.keys() {
         let file_size = get_file_size(&term, &state);
         evt = match evt {
             Event::Key(Key::Shift(ref k)) if k.is_navigation() => {
                 state.select();
-                file_dirty = true;
                 Event::Key((**k).clone())
             },
             _ => evt
@@ -181,7 +176,7 @@ fn main() {
                 } else if y == bottom_gutter && state.files.len() > 1 && !state.one_liner_active() {
                     let mut tab_x = 1;
                     for (i, f) in state.files.iter().enumerate() {
-                        tab_x += f.name.len() as i32 + 1;
+                        tab_x += f.label().len() as i32 + 1;
                         if x < tab_x {
                             state.active_file = i;
                             break;
@@ -249,16 +244,16 @@ fn main() {
                 }
             },
             Event::Key(Key::Left) => {
-                screen_dirty = state.move_cursor_left(file_size);
+                state.move_cursor_left(file_size);
             },
             Event::Key(Key::Right) => {
-                screen_dirty = state.move_cursor_right(file_size);
+                state.move_cursor_right(file_size);
             },
             Event::Key(Key::Up) => {
-                screen_dirty = state.move_cursor_up(file_size);
+                state.move_cursor_up(file_size);
             },
             Event::Key(Key::Down) => {
-                screen_dirty = state.move_cursor_down(file_size);
+                state.move_cursor_down(file_size);
             },
             Event::Key(Key::Home) => state.move_cursor_home(file_size),
             Event::Key(Key::End) => state.move_cursor_end(file_size),
@@ -277,13 +272,11 @@ fn main() {
                         _ => ()
                     }
                 }
-                file_dirty = true;
             },
             Event::Key(Key::Char('\t')) => {
                 for _ in 0..4 {
                     state.insert(file_size, ' ');
                 }
-                file_dirty = true;
             },
             Event::Key(Key::Char('\n')) => {
                 if let Some((command, value)) = state.consume_one_liner() {
@@ -313,43 +306,24 @@ fn main() {
                 match **k {
                     Key::Char(c) => {
                         state.insert(file_size, c);
-                        file_dirty = true;
                     },
                     _ => panic!("This was just the right thing!")
                 }
             },
             Event::Key(Key::Char(c)) => {
                 state.insert(file_size, c);
-                file_dirty = true;
             },
             Event::Key(Key::Shift(_)) => ()
         }
         let file_size = get_file_size(&term, &state);
-        if screen_dirty {
-            file_dirty = true;
-        }
-        if file_dirty {
-            let new_file_lines = state.lines_len();
-            let new_file_wrapped_lines = state.chunked_text(file_size).len();
-            if new_file_lines != file_lines {
-                screen_dirty = true;
-                file_lines = new_file_lines;
-            }
-            if new_file_wrapped_lines != file_wrapped_lines {
-                screen_dirty = true;
-                file_wrapped_lines = new_file_wrapped_lines;
-            }
-        }
-        if screen_dirty {
+        if state.display_dirty() || screen_dirty {
             term.clear();
             render_footer(&mut term, &state);
             render_tab_bar(&mut term, &state);
-            screen_dirty = false;
-        }
-        if file_dirty {
             render_file(&mut term, &state);
             render_one_liner(&mut term, &state);
-            file_dirty = false;
+            screen_dirty = false;
+            state.clean_display();
         }
         render_status(&mut term, &state);
         term.goto(state.cursor(file_size));

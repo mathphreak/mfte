@@ -59,6 +59,7 @@ impl OneLinerState {
             }
             self.file.lines[0] = path.into_os_string().into_string().unwrap();
             self.file.move_cursor_end((9001, 9001));
+            self.file.display_dirty = true;
         }
     }
 }
@@ -108,10 +109,6 @@ macro_rules! restrict_func {
 }
 
 impl EditorState {
-    pub fn lines_len(&self) -> usize {
-        self.active_file().lines.len()
-    }
-
     pub fn one_liner_active(&self) -> bool {
         self.one_liner().is_some()
     }
@@ -203,11 +200,29 @@ impl EditorState {
         }
         self.active_file_mut().deselect();
     }
+    
+    pub fn display_dirty(&self) -> bool {
+        match self.one_liner() {
+            &Some(ref ols) => ols.file.display_dirty,
+            _ => self.active_file().display_dirty
+        }
+    }
+    
+    pub fn clean_display(&mut self) {
+        match self.one_liner_mut() {
+            &mut Some(ref mut ols) => {
+                ols.file.display_dirty = false;
+                return;
+            },
+            _ => ()
+        }
+        self.active_file_mut().display_dirty = false;
+    }
 
-    split_func!(move_cursor_left -> bool);
-    split_func!(move_cursor_right -> bool);
-    restrict_func!(move_cursor_up -> bool, false);
-    restrict_func!(move_cursor_down -> bool, false);
+    split_func!(move_cursor_left);
+    split_func!(move_cursor_right);
+    restrict_func!(move_cursor_up);
+    restrict_func!(move_cursor_down);
     split_func!(move_cursor_home);
     split_func!(move_cursor_end);
     restrict_func!(page_up);
@@ -244,8 +259,8 @@ impl EditorState {
         self.active_file_mut().insert(dim, c)
     }
 
-    pub fn save_file(&self, path: &str) {
-        self.active_file().save(path);
+    pub fn save_file(&mut self, path: &str) {
+        self.active_file_mut().save(path);
     }
 
     pub fn open_file(&mut self, path: &str) {

@@ -157,6 +157,8 @@ pub struct File {
     last_dim: (i32, i32),
     tab_width: u8,
     misc: String,
+    pub display_dirty: bool,
+    contents_dirty: bool,
 }
 
 impl File {
@@ -182,6 +184,8 @@ impl File {
             last_dim: (0, 0),
             tab_width: 4,
             misc: String::from(""),
+            display_dirty: false,
+            contents_dirty: false,
         }
     }
 
@@ -204,10 +208,12 @@ impl File {
             last_dim: (0, 0),
             tab_width: 4,
             misc: String::from(""),
+            display_dirty: false,
+            contents_dirty: false,
         }
     }
 
-    pub fn save(&self, path: &str) {
+    pub fn save(&mut self, path: &str) {
         let f = fs::OpenOptions::new()
             .write(true)
             .create(true)
@@ -219,6 +225,8 @@ impl File {
         for line in self.lines.iter() {
             write!(f, "{}\n", line).unwrap();
         }
+        
+        self.contents_dirty = false;
     }
 
     pub fn cursor(&self, dim: (i32, i32)) -> Cursor {
@@ -233,6 +241,16 @@ impl File {
 
     pub fn lineno_chars(&self) -> i32 {
         format!("{}", self.lines.len()).len() as i32
+    }
+    
+    pub fn label(&self) -> String {
+        let mut result = if self.contents_dirty {
+            String::from("*")
+        } else {
+            String::from("")
+        };
+        result.push_str(&self.name);
+        result
     }
     
     fn chunk(&self, line_number: usize, mut line: String, offset: usize) -> Vec<TextChunk> {
@@ -323,73 +341,71 @@ impl File {
 
     pub fn refresh(&mut self, dim: (i32, i32)) {
         self.recompute_offsets(dim);
+        self.display_dirty = true;
     }
     
     pub fn select(&mut self) {
         self.selecting = true;
         if self.selection_start.is_none() {
             self.selection_start = Some(self.caret.clone());
+            self.display_dirty = true;
         }
     }
     
     pub fn deselect(&mut self) {
         self.selecting = false;
-        self.selection_start = None;
+        if self.selection_start.is_some() {
+            self.selection_start = None;
+            self.display_dirty = true;
+        }
     }
     
     fn tweak_selection(&mut self) {
         if self.selecting {
             self.selecting = false;
+            self.display_dirty = true;
         } else {
             self.deselect();
         }
     }
 
-    pub fn move_cursor_left(&mut self, dim: (i32, i32)) -> bool {
+    pub fn move_cursor_left(&mut self, dim: (i32, i32)) {
         self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_left(dim, &self.lines);
         if self.cursor(dim).y < 1 {
             self.window_top.move_up(dim, &self.lines);
-            true
-        } else {
-            false
+            self.display_dirty = true;
         }
     }
 
-    pub fn move_cursor_right(&mut self, dim: (i32, i32)) -> bool {
+    pub fn move_cursor_right(&mut self, dim: (i32, i32)) {
         self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_right(dim, &self.lines);
         if self.cursor(dim).y > dim.1 {
             self.window_top.move_down(dim, &self.lines);
-            true
-        } else {
-            false
+            self.display_dirty = true;
         }
     }
 
-    pub fn move_cursor_up(&mut self, dim: (i32, i32)) -> bool {
+    pub fn move_cursor_up(&mut self, dim: (i32, i32)) {
         self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_up(dim, &self.lines);
         if self.cursor(dim).y < 1 {
             self.window_top.move_up(dim, &self.lines);
-            true
-        } else {
-            false
+            self.display_dirty = true;
         }
     }
 
-    pub fn move_cursor_down(&mut self, dim: (i32, i32)) -> bool {
+    pub fn move_cursor_down(&mut self, dim: (i32, i32)) {
         self.tweak_selection();
         self.recompute_offsets(dim);
         self.caret.move_down(dim, &self.lines);
         if self.cursor(dim).y > dim.1 {
             self.window_top.move_down(dim, &self.lines);
-            true
-        } else {
-            false
+            self.display_dirty = true;
         }
     }
 
@@ -431,6 +447,8 @@ impl File {
             };
             line.insert(pos, c);
         }
+        self.display_dirty = true;
+        self.contents_dirty = true;
         self.move_cursor_right(dim);
     }
 
@@ -455,6 +473,8 @@ impl File {
                 line.remove(x);
             }
         }
+        self.display_dirty = true;
+        self.contents_dirty = true;
     }
 
     pub fn backspace(&mut self, dim: (i32, i32)) {
@@ -481,6 +501,8 @@ impl File {
         if let Some(n) = n {
             self.caret.x += n;
         }
+        self.display_dirty = true;
+        self.contents_dirty = true;
     }
 }
 
