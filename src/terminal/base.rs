@@ -18,7 +18,7 @@ pub enum Event {
 
 // Derived from termios, with modifications
 // Precedence **must** be Ctrl(Alt(Shift())) in that order
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum Key {
     Backspace,
     Left,
@@ -44,6 +44,14 @@ impl Key {
     pub fn is_char(&self) -> bool {
         match self {
             &Key::Char(_) => true,
+            _ => false
+        }
+    }
+    
+    pub fn is_navigation(&self) -> bool {
+        match self {
+            &Key::Left | &Key::Right | &Key::Up | &Key::Down |
+                &Key::Home | &Key::End | &Key::PageUp | &Key::PageDown => true,
             _ => false
         }
     }

@@ -6,6 +6,7 @@ use std::fmt;
 
 use super::indent::Indented;
 
+#[derive(Clone)]
 pub struct Cursor {
     pub x: i32,
     pub y: i32,
@@ -116,6 +117,7 @@ pub struct File {
     pub name: String,
     pub lines: Vec<String>,
     caret: Cursor,
+    selection_start: Option<Cursor>,
     window_top: Cursor,
     last_dim: (i32, i32),
     tab_width: u8,
@@ -124,7 +126,12 @@ pub struct File {
 
 impl File {
     pub fn debug(&self, dim: (i32, i32)) -> String {
-        format!("Caret {}, Top {}, Cursor {} {}",
+        let selection_text = if let Some(ref c) = self.selection_start {
+            format!("Selection {} ", c)
+        } else {
+            String::from("")
+        };
+        format!("{}Caret {}, Top {}, Cursor {} {}", selection_text,
             self.caret, self.window_top, self.cursor(dim), self.misc
         )
     }
@@ -134,6 +141,7 @@ impl File {
             name: String::from("<empty>"),
             lines: vec![String::from("")],
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
+            selection_start: None,
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
             tab_width: 4,
@@ -154,6 +162,7 @@ impl File {
             name: String::from(path),
             lines: lines,
             caret: Cursor { x: 1, y: 1, y_offset: 0 },
+            selection_start: None,
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
             tab_width: 4,
@@ -228,6 +237,16 @@ impl File {
 
     pub fn refresh(&mut self, dim: (i32, i32)) {
         self.recompute_offsets(dim);
+    }
+    
+    pub fn select(&mut self) {
+        if self.selection_start.is_none() {
+            self.selection_start = Some(self.caret.clone());
+        }
+    }
+    
+    pub fn deselect(&mut self) {
+        self.selection_start = None;
     }
 
     pub fn move_cursor_left(&mut self, dim: (i32, i32)) -> bool {

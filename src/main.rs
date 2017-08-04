@@ -154,8 +154,15 @@ fn main() {
     let mut file_wrapped_lines = state.wrapped_lines(file_size).len();
     let mut file_dirty = false;
     let mut screen_dirty = false;
-    for evt in term.keys() {
+    for mut evt in term.keys() {
         let file_size = get_file_size(&term, &state);
+        evt = match evt {
+            Event::Key(Key::Shift(ref k)) if k.is_navigation() => {
+                state.select();
+                Event::Key((**k).clone())
+            },
+            _ => evt
+        };
         match evt {
             Event::Mouse(MouseEvent::Press(MouseButton::Left, x, y)) => {
                 let left_gutter = state.lineno_chars() + 1;
@@ -183,7 +190,11 @@ fn main() {
             Event::Key(Key::Insert) => (),
             Event::Key(Key::F(_)) => (),
             Event::Key(Key::Esc) => {
-                state.one_liner_mut().take();
+                if state.one_liner_active() {
+                    state.one_liner_mut().take();
+                } else {
+                    state.deselect();
+                }
                 screen_dirty = true;
             },
             Event::Key(Key::Ctrl(ref k)) if **k == Key::Char('\t') => {

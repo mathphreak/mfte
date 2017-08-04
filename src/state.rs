@@ -187,6 +187,22 @@ impl EditorState {
     pub fn next_tab(&mut self) {
         self.active_file = (self.active_file + 1) % self.files.len();
     }
+    
+    pub fn select(&mut self) {
+        match self.one_liner_mut() {
+            &mut Some(ref mut ols) => return ols.file.select(),
+            _ => ()
+        }
+        self.active_file_mut().select();
+    }
+    
+    pub fn deselect(&mut self) {
+        match self.one_liner_mut() {
+            &mut Some(ref mut ols) => return ols.file.deselect(),
+            _ => ()
+        }
+        self.active_file_mut().deselect();
+    }
 
     split_func!(move_cursor_left -> bool);
     split_func!(move_cursor_right -> bool);
