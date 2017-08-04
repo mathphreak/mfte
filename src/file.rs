@@ -434,8 +434,20 @@ impl File {
             self.move_cursor_down(dim);
         }
     }
+    
+    fn delete_selection(&mut self, dim: (i32, i32)) {
+        if let Some(sel) = self.selection_start.take() {
+            // This is not smart. Especially if the selection includes half of an indent level.
+            let start = cmp::min(sel.clone(), self.caret.clone());
+            self.caret = cmp::max(sel, self.caret.clone());
+            while self.caret > start {
+                self.backspace(dim);
+            }
+        }
+    }
 
     pub fn insert(&mut self, dim: (i32, i32), c: char) {
+        self.delete_selection(dim);
         {
             let x = self.caret.x - 1;
             let line = &mut self.lines[self.caret.y as usize - 1];
@@ -452,9 +464,11 @@ impl File {
         self.move_cursor_right(dim);
     }
 
-    pub fn delete(&mut self, _: (i32, i32)) {
+    pub fn delete(&mut self, dim: (i32, i32)) {
         let x = self.caret.x as usize - 1;
-        if x == self.current_line().len() {
+        if self.selection_start.is_some() {
+            self.delete_selection(dim);
+        } else if x == self.current_line().len() {
             let y = self.caret.y as usize - 1;
             if y < self.lines.len() - 1 {
                 let next_line = self.lines.remove(y + 1);
@@ -478,8 +492,12 @@ impl File {
     }
 
     pub fn backspace(&mut self, dim: (i32, i32)) {
-        let x = self.caret.x as usize - 1;
-        if x as i32 <= self.current_line().indent_end(self.tab_width).unwrap_or(-1) {
+        let x = self.caret.x - 1;
+        if self.selection_start.is_some() {
+            self.delete_selection(dim);
+            return;
+        }
+        if x - self.tab_width as i32 >= 0 && x <= self.current_line().indent_end(self.tab_width).unwrap_or(-1) {
             self.caret.x -= self.tab_width as i32;
         } else {
             self.move_cursor_left(dim);
@@ -488,6 +506,7 @@ impl File {
     }
 
     pub fn insert_newline(&mut self, dim: (i32, i32)) {
+        self.delete_selection(dim);
         let (mut after, n) = {
             let before = &mut self.lines[self.caret.y as usize - 1];
             let n = before.indent_end(self.tab_width);
