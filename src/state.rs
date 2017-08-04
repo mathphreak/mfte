@@ -1,3 +1,6 @@
+extern crate clipboard;
+use self::clipboard::{ClipboardProvider, ClipboardContext};
+
 use super::keybinds::*;
 use super::file::*;
 
@@ -183,6 +186,33 @@ impl EditorState {
 
     pub fn next_tab(&mut self) {
         self.active_file = (self.active_file + 1) % self.files.len();
+    }
+    
+    pub fn cut(&mut self, dim: (i32, i32)) {
+        if self.active_file().has_selection() {
+            self.copy(dim);
+            self.delete(dim);
+        }
+    }
+    
+    pub fn copy(&mut self, _: (i32, i32)) {
+        if self.active_file().has_selection() {
+            let selection = self.active_file().selected_text();
+            let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
+            ctx.set_contents(selection).unwrap();
+        }
+    }
+    
+    pub fn paste(&mut self, dim: (i32, i32)) {
+        let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
+        let clipboard = ctx.get_contents().unwrap();
+        for c in clipboard.chars() {
+            if c == '\n' {
+                self.insert_newline(dim);
+            } else {
+                self.insert(dim, c);
+            }
+        }
     }
     
     pub fn select(&mut self) {

@@ -232,6 +232,15 @@ fn main() {
                         }
                         screen_dirty = true;
                     },
+                    Some(Command::Cut) => {
+                        state.cut(file_size);
+                    },
+                    Some(Command::Copy) => {
+                        state.copy(file_size);
+                    },
+                    Some(Command::Paste) => {
+                        state.paste(file_size);
+                    },
                     None => (),
                     Some(c) => {
                         let mut ols = OneLinerState::from(c);

@@ -6,6 +6,7 @@ authors = ["Matt Horn <matt@matthorn.tech>"]
 [dependencies]
 macro-attr = "0.2.0"
 enum_derive = "0.1.7"
+clipboard = "0.4.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.2.8"

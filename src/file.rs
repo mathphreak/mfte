@@ -368,6 +368,32 @@ impl File {
             self.deselect();
         }
     }
+    
+    pub fn has_selection(&self) -> bool {
+        self.selection_start.is_some()
+    }
+    
+    pub fn selected_text(&self) -> String {
+        if let Some(ref sel) = self.selection_start {
+            let start = cmp::min(sel, &self.caret);
+            let end = cmp::max(sel, &self.caret);
+            let mut pos = (*start).clone();
+            let mut here = self.lines[pos.y as usize - 1].clone();
+            let mut result = here.split_off(pos.x as usize - 1);
+            pos.x = 1;
+            pos.y += 1;
+            while pos.y <= end.y {
+                result.push('\n');
+                result.push_str(&self.lines[pos.y as usize - 1]);
+                pos.y += 1;
+            }
+            let rl = result.len();
+            result.split_off(rl - (self.lines[pos.y as usize - 2].len() - (end.x as usize - 1)));
+            result
+        } else {
+            String::from("")
+        }
+    }
 
     pub fn move_cursor_left(&mut self, dim: (i32, i32)) {
         self.tweak_selection();
