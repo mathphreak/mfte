@@ -3,6 +3,17 @@ name = "mfte"
 version = "0.1.0"
 authors = ["Matt Horn <matt@matthorn.tech>"]
 
+description = "MFTE, the magic-free text editor"
+repository = "https://github.com/mathphreak/mfte"
+readme = "README.md"
+keywords = ["text", "editor", "text-editor", "terminal"]
+categories = ["text-editors"]
+license = "MIT"
+
+[badges]
+travis-ci = { repository = "mathphreak/mfte" }
+appveyor = { repository = "mathphreak/mfte" }
+
 [dependencies]
 macro-attr = "0.2.0"
 enum_derive = "0.1.7"
