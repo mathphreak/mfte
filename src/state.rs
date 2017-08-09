@@ -261,14 +261,19 @@ impl EditorState {
     restrict_func!(scroll_down);
     
     pub fn move_cursor_to(&mut self, dim: (i32, i32), dest: (i32, i32)) {
-        while self.cursor(dim).1 < dest.1 {
+        let mut last_cursor = (-1, -1);
+        while self.cursor(dim).1 < dest.1 && self.cursor(dim) != last_cursor {
+            last_cursor = self.cursor(dim);
             self.move_cursor_down(dim);
         }
-        while self.cursor(dim).1 > dest.1 {
+        while self.cursor(dim).1 > dest.1 && self.cursor(dim) != last_cursor {
+            last_cursor = self.cursor(dim);
             self.move_cursor_up(dim);
         }
         self.move_cursor_end(dim);
-        while dest.0 < self.cursor(dim).0 {
+        last_cursor = (-1, -1);
+        while dest.0 < self.cursor(dim).0 && self.cursor(dim) != last_cursor {
+            last_cursor = self.cursor(dim);
             self.move_cursor_left(dim);
         }
     }
