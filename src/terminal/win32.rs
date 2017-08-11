@@ -7,6 +7,7 @@ use std::ptr;
 use self::winapi::winnt;
 use self::winapi::winbase;
 use self::winapi::wincon;
+use self::winapi::winnls;
 
 use super::base::*;
 
@@ -14,6 +15,8 @@ pub struct Terminal {
     stdin: winnt::HANDLE,
     stdout: winnt::HANDLE,
     orig_mode: winapi::DWORD,
+    orig_in_cp: winapi::UINT,
+    orig_out_cp: winapi::UINT,
     char_attr_bg: winapi::WORD,
     char_attr_fg: winapi::WORD,
 }
@@ -203,6 +206,8 @@ impl Default for Terminal {
             stdin: unsafe { kernel32::GetStdHandle(winbase::STD_INPUT_HANDLE) },
             stdout: unsafe { kernel32::GetStdHandle(winbase::STD_OUTPUT_HANDLE) },
             orig_mode: 0,
+            orig_in_cp: unsafe { kernel32::GetConsoleCP() },
+            orig_out_cp: unsafe { kernel32::GetConsoleOutputCP() },
             char_attr_bg: 0,
             char_attr_fg: (wincon::FOREGROUND_RED |
                 wincon::FOREGROUND_GREEN | wincon::FOREGROUND_BLUE) as winapi::WORD,
@@ -211,6 +216,8 @@ impl Default for Terminal {
             kernel32::GetConsoleMode(result.stdin, &mut result.orig_mode);
             kernel32::SetConsoleMode(result.stdin, wincon::ENABLE_MOUSE_INPUT |
                                      wincon::ENABLE_EXTENDED_FLAGS);
+            kernel32::SetConsoleCP(winnls::CP_UTF8);
+            kernel32::SetConsoleOutputCP(winnls::CP_UTF8);
         };
         result
     }
@@ -219,7 +226,11 @@ impl Default for Terminal {
 impl Drop for Terminal {
     fn drop(&mut self) {
         self.clear();
-        unsafe { kernel32::SetConsoleMode(self.stdout, self.orig_mode); };
+        unsafe {
+            kernel32::SetConsoleMode(self.stdout, self.orig_mode);
+            kernel32::SetConsoleCP(self.orig_in_cp);
+            kernel32::SetConsoleOutputCP(self.orig_out_cp);
+        };
     }
 }
 
