@@ -27,14 +27,14 @@
 | `^Y`     | Redo (NYI)                                 |
 | `^Z`     | Undo (NYI)                                 |
 | `^[`     | RESERVED (ANSI escape)                     |
-| `^\\`    | NOTHING                                    |
+| `^\`     | NOTHING                                    |
 | `^]`     | NOTHING                                    |
 | `^^`     | NOTHING                                    |
 | `^_`     | NOTHING                                    |
 
 # The Win32-Only Zone
-| Key Spec    | Action                                  |
-| ----------- | --------------------------------------- |
-| Escape      | Exit One-Liner / Deselect Text          |
-| Ctrl-Tab    | Switch to Next Tab                      |
-| Shift-<nav> | Select & Move In Direction              |
+| Key Spec      | Action                                |
+| ------------- | ------------------------------------- |
+| Escape        | Exit One-Liner / Deselect Text        |
+| Ctrl-Tab      | Switch to Next Tab                    |
+| Shift-\<nav>\ | Select & Move In Direction            |
