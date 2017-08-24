@@ -5,7 +5,15 @@ pub trait Indented {
 
 impl Indented for String {
     fn indent_end(&self, indent_size: u8) -> Option<i32> {
-        self.rfind(&" ".repeat(indent_size as usize)).map(|e| e as i32 + indent_size as i32)
+        let mut leading_spaces = self.len() - self.trim_left().len();
+        if leading_spaces % (indent_size as usize) > 0 {
+            leading_spaces -= leading_spaces % (indent_size as usize);
+        }
+        if leading_spaces > 0 {
+            Some(leading_spaces as i32)
+        } else {
+            None
+        }
     }
 
     fn pop_indentation(&mut self, indent_size: u8) {
