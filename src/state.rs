@@ -19,6 +19,7 @@ impl From<Command> for OneLinerState {
                 Command::NewTab => "",
             Command::OpenFile => "Open file:",
             Command::SaveFile => "Save file:",
+            Command::Goto => "Jump to line[:col]:",
             Command::Find => "Find text:",
             Command::FindReplace => "AAAAAAAAAA",
         };
@@ -276,6 +277,28 @@ impl EditorState {
             last_cursor = self.cursor(dim);
             self.move_cursor_left(dim);
         }
+    }
+    
+    pub fn goto(&mut self, dim: (i32, i32), target: &str) {
+        let colon_idx = target.find(':');
+        let (row, col) = match colon_idx {
+            Some(n) => {
+                let (row_str, col_str) = target.split_at(n);
+                let (_, col_str) = col_str.split_at(1);
+                (i32::from_str_radix(row_str, 10).unwrap(), i32::from_str_radix(col_str, 10).unwrap())
+            },
+            None => {
+                (i32::from_str_radix(target, 10).unwrap(), self.active_file().caret.x)
+            }
+        };
+        let row = if row < 1 {
+            1
+        } else if row > self.active_file().lines.len() as i32 {
+            self.active_file().lines.len() as i32
+        } else {
+            row
+        };
+        self.active_file_mut().goto(dim, (row, col));
     }
 
     pub fn insert_newline(&mut self, dim: (i32, i32)) {

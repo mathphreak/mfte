@@ -150,7 +150,7 @@ impl Cursor {
 pub struct File {
     pub name: String,
     pub lines: Vec<String>,
-    caret: Cursor,
+    pub caret: Cursor,
     selection_start: Option<Cursor>,
     selecting: bool,
     window_top: Cursor,
@@ -467,6 +467,23 @@ impl File {
         self.tweak_selection();
         for _ in 0..dim.1 {
             self.move_cursor_down(dim);
+        }
+    }
+    
+    pub fn goto(&mut self, dim: (i32, i32), target: (i32, i32)) {
+        let (row, col) = target;
+        while self.caret.y < row {
+            self.move_cursor_down(dim);
+        }
+        while self.caret.y > row {
+            self.move_cursor_up(dim);
+        }
+        self.caret.x = if col < 1 {
+            1
+        } else if col > self.current_line().len() as i32 + 1 {
+            self.current_line().len() as i32 + 1
+        } else {
+            col
         }
     }
     

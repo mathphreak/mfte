@@ -247,6 +247,11 @@ fn main() {
                     Some(Command::Paste) => {
                         state.paste(file_size);
                     },
+                    Some(Command::Goto) => {
+                        let ols = OneLinerState::from(Command::Goto);
+                        state.set_one_liner(ols);
+                        screen_dirty = true;
+                    },
                     None => (),
                     Some(c) => {
                         let mut ols = OneLinerState::from(c);
@@ -301,6 +306,9 @@ fn main() {
                         },
                         Command::OpenFile => {
                             state.open_file(&value);
+                        },
+                        Command::Goto => {
+                            state.goto(file_size, &value);
                         },
                         _ => ()
                     };

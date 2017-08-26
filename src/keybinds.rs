@@ -14,6 +14,7 @@ const DEFAULT_KEYBINDS: &'static str = r#"^Q: Quit
 ^Y: Redo
 ^R: Refresh
 ^T: NewTab
+^G: Goto
 "#;
 
 macro_attr! {
@@ -32,6 +33,7 @@ macro_attr! {
         Redo,
         Refresh,
         NewTab,
+        Goto,
     }
 }
 

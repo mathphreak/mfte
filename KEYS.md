@@ -6,7 +6,7 @@
 | `^D`     | NOTHING (usually bookmark / select next)   |
 | `^E`     | NOTHING                                    |
 | `^F`     | Find (NYI)                                 |
-| `^G`     | Goto (NYI)                                 |
+| `^G`     | Goto                                       |
 | `^H`     | RESERVED (ANSI backspace, usually replace) |
 | `^I`     | RESERVED (ANSI tab, usually italic)        |
 | `^J`     | RESERVED (ANSI newline)                    |
