@@ -190,10 +190,19 @@ impl File {
     }
 
     pub fn open(path: &str) -> File {
-        let f = fs::File::open(path).expect("Could not open file");
-        let f = io::BufReader::new(f);
-
-        let mut lines: Vec<String> = f.lines().map(|r| r.unwrap()).collect();
+        let mut lines: Vec<String> = match fs::File::open(path) {
+            Ok(f) => {
+                let f = io::BufReader::new(f);
+                f.lines().map(|r| r.unwrap()).collect()
+            },
+            Err(e) => {
+                if e.kind() == io::ErrorKind::NotFound {
+                    vec![]
+                } else {
+                    panic!("Could not open file: {}", e);
+                }
+            }
+        };
         if lines.len() == 0 {
             lines.push(String::from(""));
         }
