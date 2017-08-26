@@ -1,6 +1,6 @@
 [package]
 name = "mfte"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Matt Horn <matt@matthorn.tech>"]
 
 description = "MFTE, the magic-free text editor"
