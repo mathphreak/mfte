@@ -26,12 +26,7 @@ fn get_file_size(term: &Terminal, state: &EditorState) -> (i32, i32) {
         true => 1,
         false => 0
     };
-    let tab_bar_offset = if state.files.len() > 1 {
-        1
-    } else {
-        0
-    };
-    (screen_w - state.lineno_chars() - 1, screen_h - one_liner_offset - tab_bar_offset - 3)
+    (screen_w - state.lineno_chars() - 1, screen_h - one_liner_offset - 4)
 }
 
 fn render_file(out: &mut Terminal, state: &EditorState) {
@@ -109,26 +104,28 @@ fn render_one_liner(out: &mut Terminal, state: &EditorState) {
 }
 
 fn render_tab_bar(out: &mut Terminal, state: &EditorState) {
-    if state.files.len() > 1 {
-        let (_, screen_height) = out.get_size();
-        let mut x = 1;
-        let y = screen_height - 3;
+    let (screen_width, screen_height) = out.get_size();
+    let mut x = 1;
+    let y = screen_height - 3;
+    let tab_width = screen_width / state.files.len() as i32;
 
-        for (i, f) in state.files.iter().enumerate() {
-            let l = f.label();
-            out.goto((x, y));
-            out.set_color_fg(Color::Black);
-            if i == state.active_file {
-                out.set_color_bg(Color::White);
-            } else {
-                out.set_color_bg(Color::Grey);
-            }
-            write!(out, "{}", l).unwrap();
-            x += l.len() as i32 + 1;
+    for (i, f) in state.files.iter().enumerate() {
+        let l = f.label();
+        let gap = tab_width as usize - l.len();
+        out.goto((x, y));
+        out.set_color_fg(Color::Black);
+        if i == state.active_file {
+            out.set_color_bg(Color::White);
+        } else {
+            out.set_color_bg(Color::Grey);
         }
-        out.set_color_fg(Color::Reset);
-        out.set_color_bg(Color::Reset);
+        write!(out, "{0}{1}{0}{2}",
+            " ".repeat(gap / 2),
+            l, " ".repeat(gap % 2)).unwrap();
+        x += tab_width;
     }
+    out.set_color_fg(Color::Reset);
+    out.set_color_bg(Color::Reset);
 }
 
 fn main() {
@@ -175,15 +172,10 @@ fn main() {
                 } else if y < bottom_gutter {
                     let x = state.cursor(file_size).0;
                     state.move_cursor_to(file_size, (x, y));
-                } else if y == bottom_gutter && state.files.len() > 1 && !state.one_liner_active() {
-                    let mut tab_x = 1;
-                    for (i, f) in state.files.iter().enumerate() {
-                        tab_x += f.label().len() as i32 + 1;
-                        if x < tab_x {
-                            state.active_file = i;
-                            break;
-                        }
-                    }
+                } else if y == bottom_gutter && !state.one_liner_active() {
+                    let (screen_height, _) = term.get_size();
+                    let tab_width = screen_height / state.files.len() as i32;
+                    state.active_file = ((x - 1) / tab_width) as usize;
                     screen_dirty = true;
                 }
             },
