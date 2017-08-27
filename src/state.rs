@@ -310,6 +310,7 @@ impl EditorState {
 
     split_func!(delete);
     split_func!(backspace);
+    restrict_func!(tab);
 
     pub fn insert(&mut self, dim: (i32, i32), c: char) {
         match self.one_liner_mut() {

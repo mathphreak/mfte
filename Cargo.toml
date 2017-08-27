@@ -18,6 +18,7 @@ appveyor = { repository = "mathphreak/mfte" }
 macro-attr = "0.2.0"
 enum_derive = "0.1.7"
 clipboard = "0.4.0"
+editorconfig = { git = "https://github.com/mathphreak/rust-editorconfig" }
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.2.8"

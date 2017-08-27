@@ -11,7 +11,21 @@ It's pronounced "mifty" (rhymes with "nifty").
 
 Works best on Windows because that's what I use. Guaranteed to compile on Mac OS and Linux; full functionality might not happen.
 
-RULES:
+## Configuration
+
+In the interest of not reinventing the wheel, MFTE uses [EditorConfig](http://editorconfig.org/) to handle file-level settings like indent width and line endings.
+
+In the interest of enabling my own laziness, not everything is implemented.
+Indent size is just about the only thing that I care about different values of, and so I've tested 2 and 4 and those work fine. Other numerical values should work too.
+
+The simpler things, like EOF behavior and the two boolean options, should work however they're set up, but I haven't exhaustively tested them.
+
+Setting your indentation to tabs will break everything. (Loading files with indentation set to tabs will also break everything, come to think of it. This might not be a good thing.)
+
+You can't change character sets. It's UTF-8. This is a feature.
+
+## Guiding Development Principles
+
 - Don't do magic. Automatically indenting your entire file for you is really cool, but remembering how to do that takes up space in your brain that would be better spent on other things, like how to indent your code.
 - Don't be modal. Typing text should always (within reason) actually insert text.
 - Don't replace the arrow keys with other things. That's silly.

@@ -16,6 +16,8 @@ use terminal::*;
 mod state;
 use state::*;
 
+mod config;
+
 mod indent;
 
 fn get_file_size(term: &Terminal, state: &EditorState) -> (i32, i32) {
@@ -294,9 +296,7 @@ fn main() {
                 }
             },
             Event::Key(Key::Char('\t')) => {
-                for _ in 0..4 {
-                    state.insert(file_size, ' ');
-                }
+                state.tab(file_size)
             },
             Event::Key(Key::Char('\n')) => {
                 if let Some((command, value)) = state.consume_one_liner() {

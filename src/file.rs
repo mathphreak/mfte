@@ -6,6 +6,7 @@ use std::fmt;
 
 use super::terminal::Color;
 use super::indent::Indented;
+use super::config::Config;
 
 pub struct TextChunk {
     pub contents: String,
@@ -155,10 +156,10 @@ pub struct File {
     selecting: bool,
     window_top: Cursor,
     last_dim: (i32, i32),
-    tab_width: u8,
     misc: String,
     pub display_dirty: bool,
     contents_dirty: bool,
+    config: Config,
 }
 
 impl File {
@@ -182,10 +183,10 @@ impl File {
             selecting: false,
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
-            tab_width: 4,
             misc: String::from(""),
             display_dirty: false,
             contents_dirty: false,
+            config: Config::config_for(None),
         }
     }
 
@@ -207,6 +208,13 @@ impl File {
             lines.push(String::from(""));
         }
 
+        let config = Config::config_for(Some(path));
+        let misc = if config.indent() == "\t" {
+            "Tabs are stupid and MFTE doesn't support them."
+        } else {
+            ""
+        };
+
         File {
             name: String::from(path),
             lines: lines,
@@ -215,10 +223,10 @@ impl File {
             selecting: false,
             window_top: Cursor { x: 1, y: 1, y_offset: 0 },
             last_dim: (0, 0),
-            tab_width: 4,
-            misc: String::from(""),
+            misc: String::from(misc),
             display_dirty: false,
             contents_dirty: false,
+            config: Config::config_for(Some(path)),
         }
     }
 
@@ -230,11 +238,24 @@ impl File {
             .open(path)
             .expect("Could not open file");
         let mut f = io::BufWriter::new(f);
+        let ls = self.config.line_sep();
 
-        for line in self.lines.iter() {
-            write!(f, "{}\n", line).unwrap();
+        if self.config.trim_trailing_whitespace {
+            for line in self.lines.iter_mut() {
+                *line = line.trim_right().to_string();
+            }
         }
-        
+
+        let mut it = self.lines.iter().peekable();
+
+        while it.peek().is_some() {
+            let line = it.next().unwrap();
+            write!(f, "{}", line).unwrap();
+            if it.peek().is_some() || self.config.insert_final_newline {
+                write!(f, "{}", ls).unwrap();
+            }
+        }
+
         self.contents_dirty = false;
     }
 
@@ -251,7 +272,7 @@ impl File {
     pub fn lineno_chars(&self) -> i32 {
         format!("{}", self.lines.len()).len() as i32
     }
-    
+
     pub fn label(&self) -> String {
         let mut result = if self.contents_dirty {
             String::from("*")
@@ -261,7 +282,7 @@ impl File {
         result.push_str(&self.name);
         result
     }
-    
+
     fn chunk(&self, line_number: usize, mut line: String, offset: usize) -> Vec<TextChunk> {
         let mut result = vec![];
         let mut last = None;
@@ -340,6 +361,10 @@ impl File {
         &self.lines[self.caret.y as usize - 1]
     }
 
+    fn tab_width(&self) -> u8 {
+        self.config.indent().len() as u8
+    }
+
     fn recompute_offsets(&mut self, dim: (i32, i32)) {
         if dim != self.last_dim {
             self.caret.recompute_offset(dim, &self.lines);
@@ -352,7 +377,7 @@ impl File {
         self.recompute_offsets(dim);
         self.display_dirty = true;
     }
-    
+
     pub fn select(&mut self) {
         self.selecting = true;
         if self.selection_start.is_none() {
@@ -360,7 +385,7 @@ impl File {
             self.display_dirty = true;
         }
     }
-    
+
     pub fn deselect(&mut self) {
         self.selecting = false;
         if self.selection_start.is_some() {
@@ -368,7 +393,7 @@ impl File {
             self.display_dirty = true;
         }
     }
-    
+
     fn tweak_selection(&mut self) {
         if self.selecting {
             self.selecting = false;
@@ -377,11 +402,11 @@ impl File {
             self.deselect();
         }
     }
-    
+
     pub fn has_selection(&self) -> bool {
         self.selection_start.is_some()
     }
-    
+
     pub fn selected_text(&self) -> String {
         if let Some(ref sel) = self.selection_start {
             let start = cmp::min(sel, &self.caret);
@@ -469,7 +494,7 @@ impl File {
             self.move_cursor_down(dim);
         }
     }
-    
+
     pub fn goto(&mut self, dim: (i32, i32), target: (i32, i32)) {
         let (row, col) = target;
         while self.caret.y < row {
@@ -486,21 +511,21 @@ impl File {
             col
         }
     }
-    
+
     pub fn scroll_up(&mut self, dim: (i32, i32)) {
         for _ in 0..3 {
             self.window_top.move_up(dim, &self.lines);
         }
         self.display_dirty = true;
     }
-    
+
     pub fn scroll_down(&mut self, dim: (i32, i32)) {
         for _ in 0..3 {
             self.window_top.move_down(dim, &self.lines);
         }
         self.display_dirty = true;
     }
-    
+
     fn delete_selection(&mut self, dim: (i32, i32)) {
         if let Some(sel) = self.selection_start.take() {
             // This is not smart. Especially if the selection includes half of an indent level.
@@ -541,14 +566,15 @@ impl File {
                 self.lines[y].push_str(&next_line);
             }
         } else {
-            let end = self.current_line().indent_end(self.tab_width);
+            let w = self.tab_width();
+            let end = self.current_line().indent_end(w);
             let line = &mut self.lines[self.caret.y as usize - 1];
             let mut indented = end.is_some();
             if let Some(s) = end {
-                indented = x as i32 <= s - self.tab_width as i32;
+                indented = x as i32 <= s - w as i32;
             }
             if indented {
-                line.pop_indentation(self.tab_width);
+                line.pop_indentation(w);
             } else {
                 line.remove(x);
             }
@@ -563,19 +589,26 @@ impl File {
             self.delete_selection(dim);
             return;
         }
-        if x - self.tab_width as i32 >= 0 && x <= self.current_line().indent_end(self.tab_width).unwrap_or(-1) {
-            self.caret.x -= self.tab_width as i32;
+        if x - self.tab_width() as i32 >= 0 && x <= self.current_line().indent_end(self.tab_width()).unwrap_or(-1) {
+            self.caret.x -= self.tab_width() as i32;
         } else {
             self.move_cursor_left(dim);
         }
         self.delete(dim);
     }
 
+    pub fn tab(&mut self, dim: (i32, i32)) {
+        for _ in 0..(self.tab_width()) {
+            self.insert(dim, ' ')
+        }
+    }
+
     pub fn insert_newline(&mut self, dim: (i32, i32)) {
         self.delete_selection(dim);
+        let w = self.tab_width();
         let (mut after, n) = {
             let before = &mut self.lines[self.caret.y as usize - 1];
-            let n = before.indent_end(self.tab_width);
+            let n = before.indent_end(w);
             (before.split_off(self.caret.x as usize - 1), n)
         };
         if let Some(n) = n {
