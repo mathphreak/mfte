@@ -3,7 +3,7 @@ name = "mfte"
 version = "0.2.0"
 dependencies = [
  "clipboard 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "editorconfig 0.1.0 (git+https://github.com/mathphreak/rust-editorconfig)",
+ "editorconfig 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum_derive 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "macro-attr 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -90,8 +90,8 @@ dependencies = [
 
 [[package]]
 name = "editorconfig"
-version = "0.1.0"
-source = "git+https://github.com/mathphreak/rust-editorconfig#d140ed5a31515bf073ba00406b5bfbfb59bffdbe"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "argparse 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ordermap 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -296,7 +296,7 @@ dependencies = [
 "checksum clipboard 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "dd3a9a938558f33ec1baaa6ca631a69c104aafaacbc66868d9ad28cf5f30564f"
 "checksum clipboard-win 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "312bbb6eb8e6d5bcf357d112eea0f1cdd557b210e2c795feb13ea210b3307c7e"
 "checksum dbghelp-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "97590ba53bcb8ac28279161ca943a924d1fd4a8fb3fa63302591647c4fc5b850"
-"checksum editorconfig 0.1.0 (git+https://github.com/mathphreak/rust-editorconfig)" = "<none>"
+"checksum editorconfig 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d7e46388fab1edfb42119d7b4140be6eebe67215a6554c8d0456a9b1a2058957"
 "checksum enum_derive 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "406ac2a8c9eedf8af9ee1489bee9e50029278a6456c740f7454cf8a158abc816"
 "checksum error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d9435d864e017c3c6afeac1654189b06cdb491cf2ff73dbf0d73b0f292f42ff8"
 "checksum gcc 0.3.51 (registry+https://github.com/rust-lang/crates.io-index)" = "120d07f202dcc3f72859422563522b66fe6463a4c513df062874daad05f85f0a"
