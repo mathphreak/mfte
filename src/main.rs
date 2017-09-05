@@ -88,10 +88,7 @@ fn render_status(out: &mut Terminal, state: &EditorState) {
 fn render_one_liner(out: &mut Terminal, state: &EditorState) {
     if let &Some(ref ols) = state.one_liner() {
         let (_, screen_height) = out.get_size();
-        let mut y = screen_height - 3;
-        if state.files.len() > 1 {
-            y -= 1;
-        }
+        let mut y = screen_height - 4;
 
         out.goto((1, y));
         out.set_color_fg(Color::Black);
