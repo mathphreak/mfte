@@ -107,10 +107,10 @@ impl Cursor {
         }
     }
 
-    fn move_home(&mut self, dim: (i32, i32), lines: &Vec<String>) {
+    fn move_home(&mut self, dim: (i32, i32), lines: &Vec<String>, indent_size: u8) {
         if self.x <= dim.0 {
             // TODO make this not hard coded
-            if let Some(s) = lines[self.y as usize - 1].indent_end(4) {
+            if let Some(s) = lines[self.y as usize - 1].indent_end(indent_size) {
                 if self.x != s as i32 + 1 {
                     self.x = s as i32 + 1;
                 } else {
@@ -472,7 +472,8 @@ impl File {
     pub fn move_cursor_home(&mut self, dim: (i32, i32)) {
         self.tweak_selection();
         self.recompute_offsets(dim);
-        self.caret.move_home(dim, &self.lines);
+        let w = self.tab_width();
+        self.caret.move_home(dim, &self.lines, w);
     }
 
     pub fn move_cursor_end(&mut self, dim: (i32, i32)) {
