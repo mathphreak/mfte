@@ -17,7 +17,7 @@ appveyor = { repository = "mathphreak/mfte" }
 [dependencies]
 macro-attr = "0.2.0"
 enum_derive = "0.1.7"
-clipboard = "0.4.0"
+clipboard = "0.4.2"
 editorconfig = "0.2.0"
 
 [target.'cfg(windows)'.dependencies]
@@ -25,4 +25,4 @@ winapi = "0.2.8"
 kernel32-sys = "0.2.2"
 
 [target.'cfg(not(windows))'.dependencies]
-termion = "1.4.0"
+termion = "1.5.1"
