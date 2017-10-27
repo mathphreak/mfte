@@ -76,13 +76,13 @@ impl From<event::Event> for Event {
             event::Event::Mouse(m) => Event::Mouse(m.into()),
             event::Event::Unsupported(v) => {
                 let vals = v.iter().map(|x| *x as u32).collect();
-                if vals == [27, 91, 49, 59, 50, 65] {
+                if vals == [27, 91, 49, 59, 50, 65] { // <Esc>[1;2A
                     Event::Key(Key::Shift(Box::new(Key::Up)))
-                } else if vals == [27, 91, 49, 59, 50, 66] {
+                } else if vals == [27, 91, 49, 59, 50, 66] { // <Esc>[1;2B
                     Event::Key(Key::Shift(Box::new(Key::Down)))
-                } else if vals == [27, 91, 49, 59, 50, 67] {
+                } else if vals == [27, 91, 49, 59, 50, 67] { // <Esc>[1;2C
                     Event::Key(Key::Shift(Box::new(Key::Right)))
-                } else if vals == [27, 91, 49, 59, 50, 68] {
+                } else if vals == [27, 91, 49, 59, 50, 68] { // <Esc>[1;2D
                     Event::Key(Key::Shift(Box::new(Key::Left)))
                 } else {
                     Event::Unsupported(vals)
