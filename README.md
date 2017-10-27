@@ -47,6 +47,5 @@ If I wanted Ctrl+Shift+S to be different from Ctrl+S, that would work too.
 
 On UNIX, meanwhile, everything is garbage.
 Tab is just Ctrl+I, so Ctrl+Tab is not even possible.
-Down is Esc [ B, so Shift+Down also makes no sense.
-I have no idea how to resolve this without writing my own terminal emulator just for MFTE.
-Apparently you can shenanigans xterm into reinterpreting things as other things, so that might work.
+Down is Esc [ B, so Shift+Down is obviously Esc [ 2 ; 1 B.
+(Apparently this is not as complicated as I was expecting it to be.)
