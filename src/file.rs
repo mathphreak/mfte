@@ -298,7 +298,7 @@ impl File {
             if line_number >= sy && line_number <= ey {
                 if line_number == ey && offset + line.len() >= ex {
                     last = Some(TextChunk {
-                        contents: line.split_off(ex - offset),
+                        contents: line.split_off(ex - cmp::min(ex, offset)),
                         foreground: Color::Reset,
                         background: Color::Reset,
                     });
@@ -307,7 +307,8 @@ impl File {
                     line.push(' ');
                 }
                 if line_number == sy && offset < sx {
-                    let real_line = line.split_off(sx - offset);
+                    let line_length = line.len();
+                    let real_line = line.split_off(cmp::min(line_length, sx - offset));
                     result.push(TextChunk {
                         contents: line,
                         foreground: Color::Reset,
@@ -628,6 +629,7 @@ impl File {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn load_save_preserves_everything() {
         let mut f = File::open("README.md");
@@ -638,5 +640,33 @@ mod tests {
             assert_eq!(b1.unwrap(), b2.unwrap());
         }
         fs::remove_file("readme.bak").unwrap();
+    }
+
+    #[test]
+    fn selection_on_wrapped_line_going_forward() {
+        let mut f = File::open("README.md");
+        f.select();
+        f.move_cursor_right((10, 10));
+        f.chunked_text((10, 10));
+    }
+
+    #[test]
+    fn selection_on_wrapped_line_going_backward() {
+        let mut f = File::open("README.md");
+        f.move_cursor_right((10, 10));
+        f.select();
+        f.move_cursor_left((10, 10));
+        f.chunked_text((10, 10));
+    }
+
+    #[test]
+    fn selection_on_wrapped_line_going_backward_from_end_of_line() {
+        let mut f = File::open("README.md");
+        for _ in 0..f.current_line().len() {
+            f.move_cursor_right((10, 10));
+        }
+        f.select();
+        f.move_cursor_left((10, 10));
+        f.chunked_text((10, 10));
     }
 }
