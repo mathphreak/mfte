@@ -1,6 +1,6 @@
 [package]
 name = "mfte"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Matt Horn <matt@matthorn.tech>"]
 
 description = "MFTE, the magic-free text editor"
@@ -18,7 +18,7 @@ appveyor = { repository = "mathphreak/mfte" }
 macro-attr = "0.2.0"
 enum_derive = "0.1.7"
 clipboard = "0.4.2"
-editorconfig = "0.2.0"
+editorconfig = "1.0.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.2.8"

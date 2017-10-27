@@ -1,9 +1,9 @@
 [root]
 name = "mfte"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "clipboard 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "editorconfig 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "editorconfig 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum_derive 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "macro-attr 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -95,7 +95,7 @@ dependencies = [
 
 [[package]]
 name = "editorconfig"
-version = "0.2.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "argparse 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -312,7 +312,7 @@ dependencies = [
 "checksum clipboard 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d7a23c8e6bf6738816032864b8b036c9f304da5d8335e5ca725fd13577702781"
 "checksum clipboard-win 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "312bbb6eb8e6d5bcf357d112eea0f1cdd557b210e2c795feb13ea210b3307c7e"
 "checksum dbghelp-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "97590ba53bcb8ac28279161ca943a924d1fd4a8fb3fa63302591647c4fc5b850"
-"checksum editorconfig 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d7e46388fab1edfb42119d7b4140be6eebe67215a6554c8d0456a9b1a2058957"
+"checksum editorconfig 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4f8dfa22ca7964c1d4b37e2a88efe48a88b88504a4bfab19d06b57cefdd72b72"
 "checksum enum_derive 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "406ac2a8c9eedf8af9ee1489bee9e50029278a6456c740f7454cf8a158abc816"
 "checksum error-chain 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ff511d5dc435d703f4971bc399647c9bc38e20cb41452e3b9feb4765419ed3f3"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
