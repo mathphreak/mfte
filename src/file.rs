@@ -283,7 +283,7 @@ impl File {
         result
     }
 
-    fn chunk(&self, line_number: usize, mut line: String, offset: usize) -> Vec<TextChunk> {
+    fn chunk(&self, line_number: usize, mut line: String, offset: usize, partial: bool) -> Vec<TextChunk> {
         let mut result = vec![];
         let mut last = None;
         let mut fg = Color::Reset;
@@ -302,7 +302,7 @@ impl File {
                         foreground: Color::Reset,
                         background: Color::Reset,
                     });
-                } else {
+                } else if !partial {
                     // Throw in a space at the end to indicate that the selection includes the newline
                     line.push(' ');
                 }
@@ -340,13 +340,13 @@ impl File {
             let mut line_start = 0;
             let mut line_end = cmp::min(raw_line.len(), width);
             let line = String::from(&raw_line[line_start..line_end]);
-            let chunks = self.chunk(line_number, line, line_start);
+            let chunks = self.chunk(line_number, line, line_start, line_end < raw_line.len());
             result.push((Some(line_number as u16), chunks));
             while line_end < raw_line.len() {
                 line_start = line_end;
                 line_end += cmp::min(raw_line.len() - line_end, width);
                 let line = String::from(&raw_line[line_start..line_end]);
-                let chunks = self.chunk(line_number, line, line_start);
+                let chunks = self.chunk(line_number, line, line_start, line_end < raw_line.len());
                 result.push((None, chunks));
             }
             if result.len() as i32 >= dim.1 + top_extra {
