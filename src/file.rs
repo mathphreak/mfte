@@ -283,7 +283,7 @@ impl File {
         result
     }
 
-    fn chunk(&self, line_number: usize, mut line: String, offset: usize) -> Vec<TextChunk> {
+    fn chunk(&self, line_number: usize, mut line: String, offset: usize, partial: bool) -> Vec<TextChunk> {
         let mut result = vec![];
         let mut last = None;
         let mut fg = Color::Reset;
@@ -298,16 +298,17 @@ impl File {
             if line_number >= sy && line_number <= ey {
                 if line_number == ey && offset + line.len() >= ex {
                     last = Some(TextChunk {
-                        contents: line.split_off(ex - offset),
+                        contents: line.split_off(ex - cmp::min(ex, offset)),
                         foreground: Color::Reset,
                         background: Color::Reset,
                     });
-                } else {
+                } else if !partial {
                     // Throw in a space at the end to indicate that the selection includes the newline
                     line.push(' ');
                 }
                 if line_number == sy && offset < sx {
-                    let real_line = line.split_off(sx - offset);
+                    let line_length = line.len();
+                    let real_line = line.split_off(cmp::min(line_length, sx - offset));
                     result.push(TextChunk {
                         contents: line,
                         foreground: Color::Reset,
@@ -339,13 +340,13 @@ impl File {
             let mut line_start = 0;
             let mut line_end = cmp::min(raw_line.len(), width);
             let line = String::from(&raw_line[line_start..line_end]);
-            let chunks = self.chunk(line_number, line, line_start);
+            let chunks = self.chunk(line_number, line, line_start, line_end < raw_line.len());
             result.push((Some(line_number as u16), chunks));
             while line_end < raw_line.len() {
                 line_start = line_end;
                 line_end += cmp::min(raw_line.len() - line_end, width);
                 let line = String::from(&raw_line[line_start..line_end]);
-                let chunks = self.chunk(line_number, line, line_start);
+                let chunks = self.chunk(line_number, line, line_start, line_end < raw_line.len());
                 result.push((None, chunks));
             }
             if result.len() as i32 >= dim.1 + top_extra {
@@ -628,6 +629,7 @@ impl File {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn load_save_preserves_everything() {
         let mut f = File::open("README.md");
@@ -638,5 +640,33 @@ mod tests {
             assert_eq!(b1.unwrap(), b2.unwrap());
         }
         fs::remove_file("readme.bak").unwrap();
+    }
+
+    #[test]
+    fn selection_on_wrapped_line_going_forward() {
+        let mut f = File::open("README.md");
+        f.select();
+        f.move_cursor_right((10, 10));
+        f.chunked_text((10, 10));
+    }
+
+    #[test]
+    fn selection_on_wrapped_line_going_backward() {
+        let mut f = File::open("README.md");
+        f.move_cursor_right((10, 10));
+        f.select();
+        f.move_cursor_left((10, 10));
+        f.chunked_text((10, 10));
+    }
+
+    #[test]
+    fn selection_on_wrapped_line_going_backward_from_end_of_line() {
+        let mut f = File::open("README.md");
+        for _ in 0..f.current_line().len() {
+            f.move_cursor_right((10, 10));
+        }
+        f.select();
+        f.move_cursor_left((10, 10));
+        f.chunked_text((10, 10));
     }
 }
