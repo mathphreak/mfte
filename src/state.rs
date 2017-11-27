@@ -188,14 +188,14 @@ impl EditorState {
     pub fn next_tab(&mut self) {
         self.active_file = (self.active_file + 1) % self.files.len();
     }
-    
+
     pub fn cut(&mut self, dim: (i32, i32)) {
         if self.active_file().has_selection() {
             self.copy(dim);
             self.delete(dim);
         }
     }
-    
+
     pub fn copy(&mut self, _: (i32, i32)) {
         if self.active_file().has_selection() {
             let selection = self.active_file().selected_text();
@@ -203,19 +203,19 @@ impl EditorState {
             ctx.set_contents(selection).unwrap();
         }
     }
-    
+
     pub fn paste(&mut self, dim: (i32, i32)) {
         let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
         let clipboard = ctx.get_contents().unwrap();
         for c in clipboard.chars() {
             if c == '\n' {
-                self.insert_newline(dim);
+                self.insert_newline(dim, false);
             } else {
                 self.insert(dim, c);
             }
         }
     }
-    
+
     pub fn select(&mut self) {
         match self.one_liner_mut() {
             &mut Some(ref mut ols) => return ols.file.select(),
@@ -223,7 +223,7 @@ impl EditorState {
         }
         self.active_file_mut().select();
     }
-    
+
     pub fn deselect(&mut self) {
         match self.one_liner_mut() {
             &mut Some(ref mut ols) => return ols.file.deselect(),
@@ -231,14 +231,14 @@ impl EditorState {
         }
         self.active_file_mut().deselect();
     }
-    
+
     pub fn display_dirty(&self) -> bool {
         match self.one_liner() {
             &Some(ref ols) => ols.file.display_dirty,
             _ => self.active_file().display_dirty
         }
     }
-    
+
     pub fn clean_display(&mut self) {
         match self.one_liner_mut() {
             &mut Some(ref mut ols) => {
@@ -260,7 +260,7 @@ impl EditorState {
     restrict_func!(page_down);
     restrict_func!(scroll_up);
     restrict_func!(scroll_down);
-    
+
     pub fn move_cursor_to(&mut self, dim: (i32, i32), dest: (i32, i32)) {
         let mut last_cursor = (-1, -1);
         while self.cursor(dim).1 < dest.1 && self.cursor(dim) != last_cursor {
@@ -278,7 +278,7 @@ impl EditorState {
             self.move_cursor_left(dim);
         }
     }
-    
+
     pub fn goto(&mut self, dim: (i32, i32), target: &str) {
         let colon_idx = target.find(':');
         let (row, col) = match colon_idx {
@@ -301,10 +301,10 @@ impl EditorState {
         self.active_file_mut().goto(dim, (row, col));
     }
 
-    pub fn insert_newline(&mut self, dim: (i32, i32)) {
+    pub fn insert_newline(&mut self, dim: (i32, i32), indent: bool) {
         match self.one_liner() {
             &Some(_) => panic!("Can't insert newline in one liner! That's the point!"),
-            &None => self.active_file_mut().insert_newline(dim)
+            &None => self.active_file_mut().insert_newline(dim, indent)
         }
     }
 

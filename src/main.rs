@@ -302,7 +302,7 @@ fn main() {
                         _ => ()
                     };
                 } else {
-                    state.insert_newline(file_size);
+                    state.insert_newline(file_size, true);
                 }
                 screen_dirty = true;
             },

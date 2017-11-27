@@ -605,14 +605,17 @@ impl File {
         }
     }
 
-    pub fn insert_newline(&mut self, dim: (i32, i32)) {
+    pub fn insert_newline(&mut self, dim: (i32, i32), indent: bool) {
         self.delete_selection(dim);
         let w = self.tab_width();
-        let (mut after, n) = {
+        let (mut after, mut n) = {
             let before = &mut self.lines[self.caret.y as usize - 1];
             let n = before.indent_end(w);
             (before.split_off(self.caret.x as usize - 1), n)
         };
+        if !indent {
+            n = None;
+        }
         if let Some(n) = n {
             after.insert_str(0, &" ".repeat(n as usize));
         }
