@@ -1,6 +1,6 @@
 [root]
 name = "mfte"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "clipboard 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "editorconfig 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
