@@ -37,7 +37,6 @@ impl OneLinerState {
     }
 
     pub fn tab(&mut self) {
-        // TODO figure out if any of this is a good idea
         use std::path::PathBuf;
         let mut path = PathBuf::from(self.value());
         if path.file_name().is_none() {
@@ -56,14 +55,20 @@ impl OneLinerState {
                 None
             }
         })).collect();
-        if results.len() == 1 {
-            path.push(results[0].clone());
-            if path.is_dir() {
-                path.push("");
+        if results.len() > 0 {
+            let first = results[0].clone();
+            let shared = results.iter().fold(first, |a, b| {
+                a.chars().zip(b.chars()).take_while(|a| a.0 == a.1).map(|a| a.0).collect::<String>()
+            });
+            if shared.len() > 0 {
+                path.push(shared.clone());
+                if path.is_dir() && results.len() == 1 {
+                    path.push("");
+                }
+                self.file.lines[0] = path.into_os_string().into_string().unwrap();
+                self.file.move_cursor_end((9001, 9001));
+                self.file.display_dirty = true;
             }
-            self.file.lines[0] = path.into_os_string().into_string().unwrap();
-            self.file.move_cursor_end((9001, 9001));
-            self.file.display_dirty = true;
         }
     }
 }
